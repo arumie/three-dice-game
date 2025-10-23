@@ -10,9 +10,12 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
+    "drizzle-kit": "^0.31.5",
+    "drizzle-orm": "^0.44.6",
+    "next": "16.0.0",
     "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "next": "16.0.0"
+    "react-dom": "19.2.0"
   },
   "devDependencies": {
     "typescript": "^5",
