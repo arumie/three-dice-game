@@ -22,6 +22,11 @@ This is an event-sourced, minimalist architecture that:
 
 See the [Architecture Overview](src/lib/README.md) for complete technical details.
 
+## Ideas and TODOs
+
+- Players can be added to a game session after it has started
+  - Not during a round but between rounds
+
 ### Development
 
 TODO
