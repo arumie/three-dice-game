@@ -348,7 +348,7 @@ export function PlayerTurnCard({
 					/* ---- Normal round complete: someone lost ---- */
 					<>
 						<div className="flex flex-col items-center gap-2 text-center">
-							{optimisticRound.firstRollImmunity ? (
+							{optimisticRound.falseStart ? (
 								<>
 									<ShieldAlert className="size-10 text-amber-500 sm:size-12" />
 									<p className="text-sm text-muted-foreground">

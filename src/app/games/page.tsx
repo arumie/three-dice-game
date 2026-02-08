@@ -1,9 +1,9 @@
 import { getAllGames } from "@/lib/cached-queries";
-import { computeParticipantStats } from "@/lib/game-helpers";
+import { computeParticipantStats, getNameById } from "@/lib/game-helpers";
 import { GlobalStatsCard, type GlobalStats } from "@/components/games-list/global-stats-card";
 import { GameListCard } from "@/components/games-list/game-list-card";
 import { HomeButton } from "@/components/home-button";
-import type { GameModel } from "@/lib/models";
+import type { AggregatedPlayerStats, GameModel } from "@/lib/models";
 
 export default async function GamesPage() {
 	const games = await getAllGames();
@@ -29,15 +29,60 @@ export default async function GamesPage() {
 		totalShitStairs: 0,
 	};
 
-	for (const { stats } of gameData) {
+	// Aggregate per-player stats across all games (keyed by guest name)
+	const playerStatsMap = new Map<string, AggregatedPlayerStats>();
+
+	for (const { session, stats } of gameData) {
+		// Determine winner of this completed game
+		const sortedForWinner = [...stats].sort((a, b) => {
+			if (b.roundsWon !== a.roundsWon) return b.roundsWon - a.roundsWon;
+			return a.sipsDrunk - b.sipsDrunk;
+		});
+		const winnerId =
+			session.status === "completed"
+				? sortedForWinner[0]?.participantId
+				: null;
+
 		for (const s of stats) {
 			globalStats.totalSipsDrunk += s.sipsDrunk;
 			globalStats.totalThreeOfAKind += s.threeOfAKindCount;
 			globalStats.totalStairs += s.stairsCount;
 			globalStats.totalSuperStairs += s.superStairsCount;
 			globalStats.totalShitStairs += s.shitStairsCount;
+
+			const name = getNameById(s.participantId, session.participants);
+			const existing = playerStatsMap.get(name) ?? {
+				name,
+				gamesPlayed: 0,
+				gamesWon: 0,
+				roundsWon: 0,
+				roundsLost: 0,
+				sipsDrunk: 0,
+				sipsAwarded: 0,
+				sipsReceived: 0,
+				threeOfAKindCount: 0,
+				stairsCount: 0,
+				superStairsCount: 0,
+				shitStairsCount: 0,
+			};
+			existing.gamesPlayed += 1;
+			if (winnerId != null && s.participantId === winnerId) {
+				existing.gamesWon += 1;
+			}
+			existing.roundsWon += s.roundsWon;
+			existing.roundsLost += s.roundsLost;
+			existing.sipsDrunk += s.sipsDrunk;
+			existing.sipsAwarded += s.sipsAwarded;
+			existing.sipsReceived += s.sipsReceived;
+			existing.threeOfAKindCount += s.threeOfAKindCount;
+			existing.stairsCount += s.stairsCount;
+			existing.superStairsCount += s.superStairsCount;
+			existing.shitStairsCount += s.shitStairsCount;
+			playerStatsMap.set(name, existing);
 		}
 	}
+
+	const playerStats = Array.from(playerStatsMap.values());
 
 	// Split into in-progress and completed, each sorted most recent first
 	const byRecent = (
@@ -67,7 +112,7 @@ export default async function GamesPage() {
 				</div>
 
 				{games.length > 0 && (
-					<GlobalStatsCard stats={globalStats} />
+					<GlobalStatsCard stats={globalStats} playerStats={playerStats} />
 				)}
 
 				{games.length === 0 && (

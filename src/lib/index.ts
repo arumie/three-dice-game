@@ -6,6 +6,7 @@ export type {
 	GameModel,
 	ParticipantStats,
 	PlayerGlobalStats,
+	AggregatedPlayerStats,
 } from "./models";
 
 // Export pure utility functions

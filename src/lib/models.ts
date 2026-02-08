@@ -41,8 +41,8 @@ export interface RoundModel extends SelectRound {
 	finalPenaltySips: number | null;
 	losingParticipantId: number | null;
 	completedAt: Date | null;
-	/** True when the round ended because the first player rolled immunity on their first roll. */
-	firstRollImmunity: boolean;
+	/** True when the round ended because the first player rolled a special on their first roll (false start). */
+	falseStart: boolean;
 	/** True when the round completed but every player was safe (no loser). */
 	allSafe: boolean;
 }
@@ -82,5 +82,23 @@ export interface PlayerGlobalStats {
 	gamesWon: number;
 	totalSipsDrunk: number;
 	totalSipsAwarded: number;
+}
+
+/**
+ * Aggregated player statistics across all games (keyed by guest name until player registration is implemented)
+ */
+export interface AggregatedPlayerStats {
+	name: string;
+	gamesPlayed: number;
+	gamesWon: number;
+	roundsWon: number;
+	roundsLost: number;
+	sipsDrunk: number;
+	sipsAwarded: number;
+	sipsReceived: number;
+	threeOfAKindCount: number;
+	stairsCount: number;
+	superStairsCount: number;
+	shitStairsCount: number;
 }
 

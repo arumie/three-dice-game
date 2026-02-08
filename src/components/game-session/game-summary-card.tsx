@@ -14,6 +14,8 @@ import {
 	CircleArrowDown,
 	Toilet,
 	Home,
+	Award,
+	type LucideIcon,
 } from "lucide-react";
 import {
 	Card,
@@ -68,6 +70,67 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 		session.createdAt && session.completedAt
 			? formatDuration(session.createdAt, session.completedAt)
 			: null;
+
+	// Build awards from stats
+	type AwardDef = {
+		label: string;
+		quip: string;
+		icon: LucideIcon;
+		color: string;
+		participantId: number;
+		value: number;
+	};
+
+	const awardDefs: AwardDef[] = [
+		...(() => {
+			const top = [...stats].sort((a, b) => b.roundsWon - a.roundsWon)[0];
+			return top.roundsWon > 0
+				? [{ label: "Most Wins", quip: "Born winner", icon: Trophy, color: "text-primary", participantId: top.participantId, value: top.roundsWon }]
+				: [];
+		})(),
+		...(() => {
+			const top = [...stats].sort((a, b) => b.roundsLost - a.roundsLost)[0];
+			return top.roundsLost > 0
+				? [{ label: "Most Losses", quip: "Better luck next time", icon: Skull, color: "text-red-500", participantId: top.participantId, value: top.roundsLost }]
+				: [];
+		})(),
+		...(() => {
+			const top = [...stats].sort((a, b) => b.sipsDrunk - a.sipsDrunk)[0];
+			return top.sipsDrunk > 0
+				? [{ label: "Biggest Drinker", quip: "Cheers to that", icon: Beer, color: "text-red-500", participantId: top.participantId, value: top.sipsDrunk }]
+				: [];
+		})(),
+		...(() => {
+			const top = [...stats].sort((a, b) => b.sipsAwarded - a.sipsAwarded)[0];
+			return top.sipsAwarded > 0
+				? [{ label: "Top Bartender", quip: "Drinks on you", icon: Footprints, color: "text-green-600 dark:text-green-400", participantId: top.participantId, value: top.sipsAwarded }]
+				: [];
+		})(),
+		...(() => {
+			const top = [...stats].sort((a, b) => b.sipsReceived - a.sipsReceived)[0];
+			return top.sipsReceived > 0
+				? [{ label: "Most Targeted", quip: "What did you do to them?", icon: CircleArrowDown, color: "text-orange-500", participantId: top.participantId, value: top.sipsReceived }]
+				: [];
+		})(),
+		...(() => {
+			const top = [...stats].sort((a, b) => b.threeOfAKindCount - a.threeOfAKindCount)[0];
+			return top.threeOfAKindCount > 0
+				? [{ label: "Triple Threat", quip: "Three of a kind magnet", icon: Dices, color: "text-amber-600 dark:text-amber-400", participantId: top.participantId, value: top.threeOfAKindCount }]
+				: [];
+		})(),
+		...(() => {
+			const top = [...stats].sort((a, b) => b.stairsCount - a.stairsCount)[0];
+			return top.stairsCount > 0
+				? [{ label: "Stairway Master", quip: "One step at a time", icon: Footprints, color: "text-blue-500", participantId: top.participantId, value: top.stairsCount }]
+				: [];
+		})(),
+		...(() => {
+			const top = [...stats].sort((a, b) => b.shitStairsCount - a.shitStairsCount)[0];
+			return top.shitStairsCount > 0
+				? [{ label: "Shit Stairs King", quip: "Face, meet palm", icon: Toilet, color: "text-amber-800 dark:text-amber-600", participantId: top.participantId, value: top.shitStairsCount }]
+				: [];
+		})(),
+	];
 
 	return (
 		<Card className="mx-auto w-full max-w-2xl overflow-hidden">
@@ -234,6 +297,50 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 					})}
 				</div>
 			</CardContent>
+
+			{/* Game Awards */}
+			{awardDefs.length > 0 && (
+				<>
+					<Separator />
+					<CardContent className="px-4 py-5 sm:px-6">
+						<h3 className="mb-3 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+							<Award className="size-3.5" />
+							Game Awards
+						</h3>
+						<div className="grid grid-cols-2 gap-2 sm:gap-3">
+							{awardDefs.map((award) => {
+								const Icon = award.icon;
+								const name = getNameById(
+									award.participantId,
+									session.participants,
+								);
+								return (
+									<div
+										key={award.label}
+										className="flex flex-col gap-1 rounded-lg border px-3 py-2.5 sm:rounded-xl sm:px-4 sm:py-3"
+									>
+										<div className="flex items-center gap-1.5">
+											<Icon className={`size-3.5 sm:size-4 ${award.color}`} />
+											<span className="text-xs font-semibold sm:text-sm">
+												{award.label}
+											</span>
+										</div>
+										<span className="text-sm font-bold sm:text-base">
+											{name}{" "}
+											<span className="text-xs font-normal text-muted-foreground sm:text-sm">
+												({award.value})
+											</span>
+										</span>
+										<span className="text-[10px] italic text-muted-foreground sm:text-xs">
+											{award.quip}
+										</span>
+									</div>
+								);
+							})}
+						</div>
+					</CardContent>
+				</>
+			)}
 
 			<Separator />
 

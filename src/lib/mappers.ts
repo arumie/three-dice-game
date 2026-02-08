@@ -10,7 +10,7 @@ import {
 	calculateScore,
 	detectSpecialRoll,
 	findLoserFromTurns,
-	getImmunityPenalty,
+	getFalseStartPenalty,
 	getStartingParticipant,
 	isSafeRoll,
 } from "./game-utils";
@@ -100,11 +100,11 @@ export function mapRound(
 		turn.isComplete = turn.endedAt !== null;
 	}
 
-	// First-player immunity: if the first player rolled an immunity roll
-	// (three_of_a_kind or stairs) on their very first roll, the round ends
-	// immediately and that player is the loser.
+	// False start: if the first player rolled a special roll (three_of_a_kind
+	// or stairs) on their very first throw, the round ends immediately and
+	// that player is the loser.
 	// Skipped when carry-over sips exist (the penalty pool is already loaded).
-	const firstTurnImmunity =
+	const isFalseStart =
 		!hasCarryOver &&
 		firstTurn != null &&
 		firstTurn.isComplete &&
@@ -113,20 +113,20 @@ export function mapRound(
 		(firstTurn.specialRollType === "three_of_a_kind" ||
 			firstTurn.specialRollType === "stairs");
 
-	if (firstTurnImmunity) {
+	if (isFalseStart) {
 		const startingParticipantId = getStartingParticipant(round.playerOrder);
-		const immunityPenalty = getImmunityPenalty(firstTurn);
+		const falseStartPenalty = getFalseStartPenalty(firstTurn);
 		return {
 			...round,
 			turns: turnModels,
 			status: "completed",
 			startingParticipantId,
 			maxRollsAllowed,
-			currentPenaltySips: immunityPenalty,
-			finalPenaltySips: immunityPenalty,
+			currentPenaltySips: falseStartPenalty,
+			finalPenaltySips: falseStartPenalty,
 			losingParticipantId: firstTurn.participantId,
 			completedAt: firstTurn.completedAt,
-			firstRollImmunity: true,
+			falseStart: true,
 			allSafe: false,
 		};
 	}
@@ -163,7 +163,7 @@ export function mapRound(
 		finalPenaltySips: isComplete ? currentPenaltySips : null,
 		losingParticipantId,
 		completedAt,
-		firstRollImmunity: false,
+		falseStart: false,
 		allSafe,
 	};
 }

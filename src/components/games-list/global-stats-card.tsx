@@ -7,8 +7,16 @@ import {
 	Hash,
 	Toilet,
 	Sparkles,
+	Award,
+	Skull,
+	Footprints,
+	CircleArrowDown,
+	Crown,
+	type LucideIcon,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import type { AggregatedPlayerStats } from "@/lib/models";
 
 interface GlobalStats {
 	totalGames: number;
@@ -24,13 +32,53 @@ interface GlobalStats {
 
 interface GlobalStatsCardProps {
 	stats: GlobalStats;
+	playerStats: AggregatedPlayerStats[];
 }
 
 export type { GlobalStats };
 
-export function GlobalStatsCard({ stats }: GlobalStatsCardProps) {
+type AwardDef = {
+	label: string;
+	quip: string;
+	icon: LucideIcon;
+	color: string;
+	name: string;
+	value: number;
+};
+
+function buildAward(
+	players: AggregatedPlayerStats[],
+	key: keyof AggregatedPlayerStats,
+	label: string,
+	quip: string,
+	icon: LucideIcon,
+	color: string,
+): AwardDef | null {
+	if (players.length === 0) return null;
+	const top = [...players].sort(
+		(a, b) => (b[key] as number) - (a[key] as number),
+	)[0];
+	const value = top[key] as number;
+	return value > 0
+		? { label, quip, icon, color, name: top.name, value }
+		: null;
+}
+
+export function GlobalStatsCard({ stats, playerStats }: GlobalStatsCardProps) {
 	const totalSpecials =
 		stats.totalThreeOfAKind + stats.totalStairs + stats.totalSuperStairs;
+
+	const awardDefs: AwardDef[] = [
+		buildAward(playerStats, "gamesWon", "Most Victories", "Champion of champions", Crown, "text-yellow-600 dark:text-yellow-400"),
+		buildAward(playerStats, "roundsWon", "Most Wins", "Born winner", Trophy, "text-primary"),
+		buildAward(playerStats, "roundsLost", "Most Losses", "Better luck next time", Skull, "text-red-500"),
+		buildAward(playerStats, "sipsDrunk", "Biggest Drinker", "Cheers to that", Beer, "text-red-500"),
+		buildAward(playerStats, "sipsAwarded", "Top Bartender", "Drinks on you", Footprints, "text-green-600 dark:text-green-400"),
+		buildAward(playerStats, "sipsReceived", "Most Targeted", "What did you do to them?", CircleArrowDown, "text-orange-500"),
+		buildAward(playerStats, "threeOfAKindCount", "Triple Threat", "Three of a kind magnet", Dices, "text-amber-600 dark:text-amber-400"),
+		buildAward(playerStats, "stairsCount", "Stairway Master", "One step at a time", Footprints, "text-blue-500"),
+		buildAward(playerStats, "shitStairsCount", "Shit Stairs King", "Face, meet palm", Toilet, "text-amber-800 dark:text-amber-600"),
+	].filter((a): a is AwardDef => a !== null);
 
 	return (
 		<Card className="w-full">
@@ -116,6 +164,46 @@ export function GlobalStatsCard({ stats }: GlobalStatsCardProps) {
 					</div>
 				</div>
 			</CardContent>
+
+			{/* All-Time Awards */}
+			{awardDefs.length > 0 && (
+				<>
+					<Separator />
+					<CardContent className="px-4 py-4 sm:px-6 sm:py-5">
+						<h3 className="mb-3 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+							<Award className="size-3.5" />
+							All-Time Awards
+						</h3>
+						<div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+							{awardDefs.map((award) => {
+								const Icon = award.icon;
+								return (
+									<div
+										key={award.label}
+										className="flex flex-col gap-1 rounded-lg border px-3 py-2.5 sm:rounded-xl sm:px-4 sm:py-3"
+									>
+										<div className="flex items-center gap-1.5">
+											<Icon className={`size-3.5 sm:size-4 ${award.color}`} />
+											<span className="text-xs font-semibold sm:text-sm">
+												{award.label}
+											</span>
+										</div>
+										<span className="text-sm font-bold sm:text-base">
+											{award.name}{" "}
+											<span className="text-xs font-normal text-muted-foreground sm:text-sm">
+												({award.value})
+											</span>
+										</span>
+										<span className="text-[10px] italic text-muted-foreground sm:text-xs">
+											{award.quip}
+										</span>
+									</div>
+								);
+							})}
+						</div>
+					</CardContent>
+				</>
+			)}
 		</Card>
 	);
 }

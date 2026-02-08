@@ -84,12 +84,12 @@ export function RoundBrowser({ rounds, participants }: RoundBrowserProps) {
 			<Separator />
 
 			<CardContent className="flex flex-col gap-4 px-4 py-4 sm:px-6">
-				{/* Immunity banner */}
-				{round.firstRollImmunity && (
+				{/* False start banner */}
+				{round.falseStart && (
 					<div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
 						<ShieldAlert className="size-4 shrink-0 text-amber-500" />
 						<span className="text-muted-foreground">
-							First-roll immunity — {loserName} took the penalty
+							False start — {loserName} took the penalty
 						</span>
 					</div>
 				)}

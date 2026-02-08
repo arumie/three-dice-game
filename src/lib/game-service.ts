@@ -345,8 +345,8 @@ export async function recordRoll(
 		dice,
 	});
 
-	// First-player immunity: if the first player's first roll is an immunity
-	// roll (three_of_a_kind or stairs), auto-end their turn so the round
+	// False start: if the first player's first roll is a special roll
+	// (three_of_a_kind or stairs), auto-end their turn so the round
 	// completes immediately. Skipped when carry-over sips exist (penalty
 	// pool is already loaded from a previous all-safe round).
 	const hasCarryOver = (round.carryOverSips ?? 0) > 0;

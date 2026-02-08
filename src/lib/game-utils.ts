@@ -66,11 +66,11 @@ export function getThreeOfAKindSips(diceValue: number): number {
 }
 
 /**
- * Calculate the penalty when the first player rolls immunity on their first roll.
+ * Calculate the penalty when the first player triggers a false start (special roll on their first throw).
  * Three of a kind: the standard three-of-a-kind sips.
  * Stairs: turnOrder + 1 (always 1 for the first player).
  */
-export function getImmunityPenalty(turn: PlayerTurnModel): number {
+export function getFalseStartPenalty(turn: PlayerTurnModel): number {
 	if (turn.specialRollType === "three_of_a_kind") {
 		return getThreeOfAKindSips(turn.rolls[0].dice[0].value);
 	}
