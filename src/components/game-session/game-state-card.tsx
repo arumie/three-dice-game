@@ -46,6 +46,7 @@ import {
 	getStatusVariant,
 } from "@/lib/game-helpers";
 import { endGameAction } from "@/app/actions";
+import { toast } from "sonner";
 
 interface GameStateCardProps {
 	session: GameModel;
@@ -77,8 +78,12 @@ export function GameStateCard({ session, stats, gameSessionId }: GameStateCardPr
 	function handleEndGame() {
 		setEndGameOpen(false);
 		startTransition(async () => {
-			await endGameAction({ gameSessionId });
-			router.push(`/game-session/${gameSessionId}/summary`);
+			try {
+				await endGameAction({ gameSessionId });
+				router.push(`/game-session/${gameSessionId}/summary`);
+			} catch {
+				toast.error("Something went wrong. Please try again.");
+			}
 		});
 	}
 

@@ -19,7 +19,16 @@ export async function createGameAction(data: {
 	password: string;
 	players: { name: string }[];
 	randomTurnOrder: boolean;
+	creationPassword?: string;
 }) {
+	// 0. Validate creation password if required
+	const requiredCreationPassword = process.env.GAME_CREATION_PASSWORD;
+	if (requiredCreationPassword) {
+		if (data.creationPassword !== requiredCreationPassword) {
+			throw new Error("Invalid creation password");
+		}
+	}
+
 	// 1. Create the game session
 	const session = await createGameSession({
 		ownerId: "local",

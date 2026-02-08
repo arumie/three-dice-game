@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { GameRulesDialog } from "@/components/game-rules-dialog";
 import { MobileToolbar } from "@/components/mobile-toolbar";
 import { SiteFooter } from "@/components/site-footer";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,6 +48,7 @@ export default function RootLayout({
         <GameRulesDialog />
         <MobileToolbar />
         <ThemeToggle />
+        <Toaster />
       </body>
     </html>
   );

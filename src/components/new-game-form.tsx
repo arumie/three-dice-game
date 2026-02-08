@@ -37,6 +37,7 @@ import {
 
 import { DiceLoading } from "@/components/dice-loading";
 import { createGameAction } from "@/app/actions";
+import { toast } from "sonner";
 
 const MIN_PLAYERS = 3;
 const MAX_PLAYERS = 20;
@@ -45,6 +46,7 @@ const MIN_LOADING_MS = 2000;
 const newGameSchema = z.object({
 	name: z.string().min(1, "Game name is required").max(100),
 	password: z.string().min(1, "Password is required").max(100),
+	creationPassword: z.string().optional(),
 	players: z
 		.array(
 			z.object({
@@ -71,16 +73,22 @@ const DEFAULT_PLAYERS = Array.from({ length: MIN_PLAYERS }, () => ({
 	name: "",
 }));
 
-export function NewGameForm() {
+interface NewGameFormProps {
+	requiresCreationPassword?: boolean;
+}
+
+export function NewGameForm({ requiresCreationPassword = false }: NewGameFormProps) {
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
+	const [showCreationPassword, setShowCreationPassword] = useState(false);
 
 	const form = useForm<NewGameFormValues>({
 		resolver: zodResolver(newGameSchema),
 		defaultValues: {
 			name: "",
 			password: "",
+			creationPassword: "",
 			players: DEFAULT_PLAYERS,
 			randomTurnOrder: false,
 		},
@@ -101,6 +109,7 @@ export function NewGameForm() {
 						password: values.password,
 						players: values.players,
 						randomTurnOrder: values.randomTurnOrder,
+						creationPassword: values.creationPassword,
 					}),
 					new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS)),
 				]);
@@ -108,6 +117,7 @@ export function NewGameForm() {
 				router.push(`/game-session/${result.id}`);
 			} catch {
 				setIsLoading(false);
+				toast.error("Something went wrong. Please try again.");
 			}
 		},
 		[router],
@@ -291,6 +301,46 @@ export function NewGameForm() {
 											</FormItem>
 										)}
 									/>
+								{requiresCreationPassword && (
+									<FormField
+										control={form.control}
+										name="creationPassword"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Creation Password</FormLabel>
+												<InputGroup>
+													<FormControl>
+														<InputGroupInput
+															type={showCreationPassword ? "text" : "password"}
+															placeholder="Enter creation password"
+															autoComplete="off"
+															{...field}
+														/>
+													</FormControl>
+													<InputGroupAddon align="inline-end">
+														<InputGroupButton
+															size="icon-xs"
+															onClick={() => setShowCreationPassword((v) => !v)}
+														>
+															{showCreationPassword ? (
+																<EyeOff className="size-4" />
+															) : (
+																<Eye className="size-4" />
+															)}
+															<span className="sr-only">
+																{showCreationPassword ? "Hide" : "Show"} creation password
+															</span>
+														</InputGroupButton>
+													</InputGroupAddon>
+												</InputGroup>
+												<FormDescription className="text-xs sm:text-sm">
+													This game is still in development. A special password is required to create new games.
+												</FormDescription>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+								)}
 								</CardContent>
 								<CardFooter className="px-4 pt-2 pb-5 sm:px-6 sm:pb-6">
 									<Button type="submit" size="lg" className="w-full">

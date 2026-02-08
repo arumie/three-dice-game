@@ -24,6 +24,7 @@ import {
 	endTurnAction,
 	startRoundAction,
 } from "@/app/actions";
+import { toast } from "sonner";
 
 interface PlayerTurnCardProps {
 	gameSessionId: number;
@@ -243,32 +244,48 @@ export function PlayerTurnCard({
 		setSelectedForReRoll(new Set());
 
 		startTransition(async () => {
-			addOptimistic({ type: "roll", dice: optimisticDice });
-			await rollDiceAction({
-				gameSessionId,
-				diceValues: values,
-				reRollIndices,
-			});
+			try {
+				addOptimistic({ type: "roll", dice: optimisticDice });
+				await rollDiceAction({
+					gameSessionId,
+					diceValues: values,
+					reRollIndices,
+				});
+			} catch {
+				toast.error("Something went wrong. Please try again.");
+			}
 		});
 	}
 
 	function handleEndTurn() {
 		startTransition(async () => {
-			addOptimistic({ type: "endTurn" });
-			await endTurnAction({ gameSessionId });
+			try {
+				addOptimistic({ type: "endTurn" });
+				await endTurnAction({ gameSessionId });
+			} catch {
+				toast.error("Something went wrong. Please try again.");
+			}
 		});
 	}
 
 	function handleAwardSips(targetParticipantId: number) {
 		startTransition(async () => {
-			addOptimistic({ type: "endTurn" });
-			await endTurnAction({ gameSessionId, awardedToParticipantId: targetParticipantId });
+			try {
+				addOptimistic({ type: "endTurn" });
+				await endTurnAction({ gameSessionId, awardedToParticipantId: targetParticipantId });
+			} catch {
+				toast.error("Something went wrong. Please try again.");
+			}
 		});
 	}
 
 	function handleStartRound() {
 		startTransition(async () => {
-			await startRoundAction({ gameSessionId });
+			try {
+				await startRoundAction({ gameSessionId });
+			} catch {
+				toast.error("Something went wrong. Please try again.");
+			}
 		});
 	}
 
