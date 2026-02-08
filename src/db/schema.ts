@@ -18,6 +18,7 @@ export const specialRollTypeEnum = pgEnum("special_roll_type", [
 	"stairs",
 	"super_stairs",
 	"shit_stairs",
+	"lowest",
 	"none",
 ]);
 
@@ -140,6 +141,7 @@ export type SpecialRollType =
 	| "stairs"
 	| "super_stairs"
 	| "shit_stairs"
+	| "lowest"
 	| "none";
 
 export type InsertPlayer = typeof playersTable.$inferInsert;

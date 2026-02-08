@@ -47,6 +47,11 @@ export function detectSpecialRoll(dice: Dice): SpecialRollType {
 		return "shit_stairs";
 	}
 
+	// Lowest possible score: [2,2,3] = 7 points
+	if (calculateScore(dice) === 7) {
+		return "lowest";
+	}
+
 	return "none";
 }
 
@@ -54,7 +59,9 @@ export function detectSpecialRoll(dice: Dice): SpecialRollType {
  * Check if a special roll makes the player "safe"
  */
 export function isSafeRoll(specialRollType: SpecialRollType): boolean {
-	return specialRollType !== "none" && specialRollType !== "shit_stairs";
+	return specialRollType !== "none"
+		&& specialRollType !== "shit_stairs"
+		&& specialRollType !== "lowest";
 }
 
 /**

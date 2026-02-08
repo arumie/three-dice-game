@@ -71,6 +71,8 @@ export interface ParticipantStats {
 	stairsCount: number;
 	superStairsCount: number;
 	shitStairsCount: number;
+	lowestScoreCount: number;
+	lowestScoreSipsDrunk: number;
 }
 
 /**
@@ -100,5 +102,7 @@ export interface AggregatedPlayerStats {
 	stairsCount: number;
 	superStairsCount: number;
 	shitStairsCount: number;
+	lowestScoreCount: number;
+	lowestScoreSipsDrunk: number;
 }
 

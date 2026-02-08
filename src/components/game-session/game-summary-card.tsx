@@ -13,6 +13,7 @@ import {
 	Plus,
 	CircleArrowDown,
 	Toilet,
+	TrendingDown,
 	Home,
 	Award,
 	type LucideIcon,
@@ -128,6 +129,12 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 			const top = [...stats].sort((a, b) => b.shitStairsCount - a.shitStairsCount)[0];
 			return top.shitStairsCount > 0
 				? [{ label: "Shit Stairs King", quip: "Face, meet palm", icon: Toilet, color: "text-amber-800 dark:text-amber-600", participantId: top.participantId, value: top.shitStairsCount }]
+				: [];
+		})(),
+		...(() => {
+			const top = [...stats].sort((a, b) => b.lowestScoreCount - a.lowestScoreCount)[0];
+			return top.lowestScoreCount > 0
+				? [{ label: "Bottom Roller", quip: "Couldn't roll worse if you tried", icon: TrendingDown, color: "text-amber-600 dark:text-amber-400", participantId: top.participantId, value: top.lowestScoreCount }]
 				: [];
 		})(),
 	];
@@ -289,6 +296,15 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 										>
 											<Toilet className="size-3 sm:size-5" />
 											{s.shitStairsCount}
+										</span>
+									)}
+									{s.lowestScoreCount > 0 && (
+										<span
+											className="flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400 sm:gap-1.5 sm:font-bold"
+											title="Lowest score rolls"
+										>
+											<TrendingDown className="size-3 sm:size-5" />
+											{s.lowestScoreCount}
 										</span>
 									)}
 								</div>

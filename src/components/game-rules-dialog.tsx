@@ -169,6 +169,26 @@ export function GameRulesDialog() {
 												a sad, regular roll. Better luck next time.
 											</p>
 										</div>
+
+										<div className="rounded-md border p-2.5">
+											<div className="mb-0.5 font-medium">
+												Lowest Roll{" "}
+												<span className="text-xs text-muted-foreground">
+													(2-2-3 = 7 pts)
+												</span>
+											</div>
+											<p className="text-muted-foreground">
+												Rock bottom! The lowest possible score that isn&apos;t
+												already a special roll.{" "}
+												<strong className="text-foreground">
+													Everyone takes 1 sip
+												</strong>{" "}
+												every time someone rolls it &mdash; even on a mid-turn
+												re-roll. And no, it{" "}
+												<strong className="text-foreground">doesn&apos;t</strong>{" "}
+												make you safe. You can still lose the round on top of it, but hey... <strong className="text-foreground">at least you're dragging everyone down with you.</strong>
+											</p>
+										</div>
 									</div>
 								</section>
 

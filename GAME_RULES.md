@@ -59,6 +59,11 @@ A player can roll three dice in ascending order by rolling three dice with the n
 These are called "shit stairs" because they don't count as a "normal" stairs roll or a "super stairs" roll, but also don't include a 1 or a 6 (which give the most points). This means that its basically a wasted roll.
 The punishment for rolling "shit stairs" is that the player has to drink a sip and smack their own forehead (In a joking manner)
 
+#### Lowest Roll [2, 2, 3] (7 points)
+
+The absolute rock bottom! If a player rolls the lowest possible non-special score of 7 points (any combination of [2, 2, 3]), **everyone** in the game has to take 1 sip. This applies to every individual roll — not just the player's final roll. So if a player rolls the lowest on their first roll and then re-rolls to something else, everyone still drinks for that first roll. A player who manages to roll the lowest multiple times in one turn triggers it each time.
+Unlike three of a kind or stairs, rolling the lowest does **not** make you safe — you can still lose the round.
+
 ### Playing the game
 
 The game consists of rounds. At the start of a round, the starting player is determined by the previous round's loser (or choose a random player to start if there was no previous round).

@@ -40,6 +40,8 @@ export function formatSpecialRoll(type: string): string | null {
 			return "Super Stairs";
 		case "shit_stairs":
 			return "Shit Stairs";
+		case "lowest":
+			return "Lowest";
 		default:
 			return null;
 	}
@@ -90,10 +92,29 @@ export function computeParticipantStats(
 			stairsCount: 0,
 			superStairsCount: 0,
 			shitStairsCount: 0,
+			lowestScoreCount: 0,
+			lowestScoreSipsDrunk: 0,
 		});
 	}
 
 	for (const round of session.rounds) {
+		// Count lowest rolls from ALL rounds (including in-progress)
+		// since "everyone drinks 1 sip" triggers immediately on each roll
+		for (const turn of round.turns) {
+			const s = statsMap.get(turn.participantId);
+			if (!s) continue;
+
+			for (const roll of turn.rolls) {
+				if (roll.specialRollType === "lowest") {
+					s.lowestScoreCount += 1;
+					for (const [, ps] of statsMap) {
+						ps.lowestScoreSipsDrunk += 1;
+						ps.sipsDrunk += 1;
+					}
+				}
+			}
+		}
+
 		if (round.status !== "completed") continue;
 
 		// Count special rolls, sips awarded, and sips received per turn

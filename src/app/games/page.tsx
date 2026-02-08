@@ -27,6 +27,7 @@ export default async function GamesPage() {
 		totalStairs: 0,
 		totalSuperStairs: 0,
 		totalShitStairs: 0,
+		totalLowestScores: 0,
 	};
 
 	// Aggregate per-player stats across all games (keyed by guest name)
@@ -49,6 +50,7 @@ export default async function GamesPage() {
 			globalStats.totalStairs += s.stairsCount;
 			globalStats.totalSuperStairs += s.superStairsCount;
 			globalStats.totalShitStairs += s.shitStairsCount;
+			globalStats.totalLowestScores += s.lowestScoreCount;
 
 			const name = getNameById(s.participantId, session.participants);
 			const existing = playerStatsMap.get(name) ?? {
@@ -64,6 +66,8 @@ export default async function GamesPage() {
 				stairsCount: 0,
 				superStairsCount: 0,
 				shitStairsCount: 0,
+				lowestScoreCount: 0,
+				lowestScoreSipsDrunk: 0,
 			};
 			existing.gamesPlayed += 1;
 			if (winnerId != null && s.participantId === winnerId) {
@@ -78,6 +82,8 @@ export default async function GamesPage() {
 			existing.stairsCount += s.stairsCount;
 			existing.superStairsCount += s.superStairsCount;
 			existing.shitStairsCount += s.shitStairsCount;
+			existing.lowestScoreCount += s.lowestScoreCount;
+			existing.lowestScoreSipsDrunk += s.lowestScoreSipsDrunk;
 			playerStatsMap.set(name, existing);
 		}
 	}

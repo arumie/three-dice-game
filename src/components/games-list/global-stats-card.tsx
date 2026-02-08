@@ -7,6 +7,7 @@ import {
 	Hash,
 	Toilet,
 	Sparkles,
+	TrendingDown,
 	Award,
 	Skull,
 	Footprints,
@@ -28,6 +29,7 @@ interface GlobalStats {
 	totalStairs: number;
 	totalSuperStairs: number;
 	totalShitStairs: number;
+	totalLowestScores: number;
 }
 
 interface GlobalStatsCardProps {
@@ -78,6 +80,7 @@ export function GlobalStatsCard({ stats, playerStats }: GlobalStatsCardProps) {
 		buildAward(playerStats, "threeOfAKindCount", "Triple Threat", "Three of a kind magnet", Dices, "text-amber-600 dark:text-amber-400"),
 		buildAward(playerStats, "stairsCount", "Stairway Master", "One step at a time", Footprints, "text-blue-500"),
 		buildAward(playerStats, "shitStairsCount", "Shit Stairs King", "Face, meet palm", Toilet, "text-amber-800 dark:text-amber-600"),
+		buildAward(playerStats, "lowestScoreCount", "Bottom Roller", "Couldn't roll worse if you tried", TrendingDown, "text-amber-600 dark:text-amber-400"),
 	].filter((a): a is AwardDef => a !== null);
 
 	return (
@@ -87,7 +90,7 @@ export function GlobalStatsCard({ stats, playerStats }: GlobalStatsCardProps) {
 					<Trophy className="size-4 sm:size-5" />
 					All-Time Stats
 				</div>
-				<div className="grid grid-cols-3 gap-3 sm:grid-cols-5 sm:gap-4">
+				<div className="grid grid-cols-3 gap-3 sm:grid-cols-6 sm:gap-4">
 					{/* Total Games */}
 					<div className="flex flex-col items-center gap-1 rounded-lg border px-2 py-3 sm:px-3">
 						<Hash className="size-4 text-primary sm:size-5" />
@@ -160,6 +163,17 @@ export function GlobalStatsCard({ stats, playerStats }: GlobalStatsCardProps) {
 						</span>
 						<span className="text-[10px] text-muted-foreground sm:text-xs">
 							Shit Stairs
+						</span>
+					</div>
+
+					{/* Lowest Scores */}
+					<div className="flex flex-col items-center gap-1 rounded-lg border px-2 py-3 sm:px-3">
+						<TrendingDown className="size-4 text-amber-600 dark:text-amber-400 sm:size-5" />
+						<span className="text-lg font-bold tabular-nums text-amber-600 dark:text-amber-400 sm:text-2xl">
+							{stats.totalLowestScores}
+						</span>
+						<span className="text-[10px] text-muted-foreground sm:text-xs">
+							Lowest
 						</span>
 					</div>
 				</div>

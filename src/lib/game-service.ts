@@ -453,6 +453,11 @@ export async function getParticipantStats(
 	let stairsCount = 0;
 	let superStairsCount = 0;
 	let shitStairsCount = 0;
+	let lowestScoreCount = 0;
+	let lowestScoreSipsDrunk = 0;
+
+	// We need all participants for lowest-score sip tracking
+	const allParticipants = await getGameParticipantsBySession(gameSessionId);
 
 	for (const round of rounds) {
 		// Fetch turns for this round
@@ -470,6 +475,21 @@ export async function getParticipantStats(
 		});
 
 		const roundModel = mapRound(round, turns, rollsByTurnId);
+
+		// Count lowest rolls from ALL rounds (including in-progress)
+		// since "everyone drinks 1 sip" triggers immediately on each roll
+		for (const turn of roundModel.turns) {
+			for (const roll of turn.rolls) {
+				if (roll.specialRollType === "lowest") {
+					if (turn.participantId === participantId) {
+						lowestScoreCount++;
+					}
+					lowestScoreSipsDrunk++;
+					sipsDrunk++;
+				}
+			}
+		}
+
 		if (roundModel.status !== "completed") continue;
 
 		// Check if this participant lost
@@ -514,7 +534,7 @@ export async function getParticipantStats(
 		}
 	}
 
-	return { participantId, roundsWon, roundsLost, sipsDrunk, sipsAwarded, sipsReceived, threeOfAKindCount, stairsCount, superStairsCount, shitStairsCount };
+	return { participantId, roundsWon, roundsLost, sipsDrunk, sipsAwarded, sipsReceived, threeOfAKindCount, stairsCount, superStairsCount, shitStairsCount, lowestScoreCount, lowestScoreSipsDrunk };
 }
 
 /**

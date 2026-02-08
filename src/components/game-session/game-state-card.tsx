@@ -13,6 +13,7 @@ import {
 	Crown,
 	Skull,
 	Toilet,
+	TrendingDown,
 	Home,
 } from "lucide-react";
 import {
@@ -222,6 +223,15 @@ export function GameStateCard({ session, stats, gameSessionId }: GameStateCardPr
 											>
 												<Toilet className="size-5" />
 												{s.shitStairsCount}
+											</span>
+										)}
+										{s.lowestScoreCount > 0 && (
+											<span
+												className="flex items-center gap-1.5 font-bold text-amber-600 dark:text-amber-400"
+												title="Lowest score rolls"
+											>
+												<TrendingDown className="size-5" />
+												{s.lowestScoreCount}
 											</span>
 										)}
 									</div>

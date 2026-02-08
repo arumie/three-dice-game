@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useOptimistic } from "react";
-import { Dices, RotateCcw, Check, Beer, Hand, Footprints, Play, Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Dices, RotateCcw, Check, Beer, Hand, Footprints, Play, Loader2, ShieldAlert, ShieldCheck, TrendingDown } from "lucide-react";
 import {
 	Card,
 	CardContent,
@@ -157,8 +157,9 @@ export function PlayerTurnCard({
 	const canReRoll = hasDice && rollCount < optimisticRound.maxRollsAllowed;
 	// Clear "kept" highlighting when re-rolling is no longer possible
 	// or when a special roll is showing (kept markers are irrelevant)
+	const isLowestRoll = latestRoll?.specialRollType === "lowest";
 	const isSafeResult = latestRoll ? isSafeRoll(latestRoll.specialRollType) : false;
-	const currentDice = canReRoll && !isSafeResult
+	const currentDice = canReRoll && !isSafeResult && !isLowestRoll
 		? rawDice
 		: rawDice.map((d) => ({ ...d, kept: false }));
 	const isFirstRoll = !hasDice;
@@ -277,6 +278,16 @@ export function PlayerTurnCard({
 			? getNameById(optimisticRound.losingParticipantId, participants)
 			: null;
 
+		// Count lowest rolls across all turns in this round
+		const lowestRolls: { participantId: number; count: number }[] = [];
+		for (const t of optimisticRound.turns) {
+			const count = t.rolls.filter((r) => r.specialRollType === "lowest").length;
+			if (count > 0) {
+				lowestRolls.push({ participantId: t.participantId, count });
+			}
+		}
+		const totalLowestRolls = lowestRolls.reduce((sum, lr) => sum + lr.count, 0);
+
 		return (
 			<Card className="flex h-full w-full flex-col">
 				<CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
@@ -304,6 +315,26 @@ export function PlayerTurnCard({
 								{optimisticRound.currentPenaltySips} {optimisticRound.currentPenaltySips === 1 ? "sip" : "sips"} carry over
 							</Badge>
 						</div>
+
+						{/* Lowest roll banner */}
+						{totalLowestRolls > 0 && (
+							<div className="flex w-full flex-col gap-1 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
+								{lowestRolls.map((lr) => (
+									<div key={lr.participantId} className="flex items-center gap-2">
+										<TrendingDown className="size-4 text-amber-600 dark:text-amber-400" />
+										<span className="text-muted-foreground">
+											<span className="font-semibold">{getNameById(lr.participantId, participants)}</span>
+											{" rolled the lowest"}
+											{lr.count > 1 ? ` ${lr.count} times` : ""}
+											{" — everyone drinks "}
+											<span className="font-semibold text-amber-600 dark:text-amber-400">
+												{lr.count} {lr.count === 1 ? "sip" : "sips"}
+											</span>
+										</span>
+									</div>
+								))}
+							</div>
+						)}
 
 						<Separator className="my-2" />
 
@@ -373,6 +404,26 @@ export function PlayerTurnCard({
 								{optimisticRound.finalPenaltySips} {optimisticRound.finalPenaltySips === 1 ? "sip" : "sips"}
 							</Badge>
 						</div>
+
+						{/* Lowest roll banner */}
+						{totalLowestRolls > 0 && (
+							<div className="flex w-full flex-col gap-1 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
+								{lowestRolls.map((lr) => (
+									<div key={lr.participantId} className="flex items-center gap-2">
+										<TrendingDown className="size-4 text-amber-600 dark:text-amber-400" />
+										<span className="text-muted-foreground">
+											<span className="font-semibold">{getNameById(lr.participantId, participants)}</span>
+											{" rolled the lowest"}
+											{lr.count > 1 ? ` ${lr.count} times` : ""}
+											{" — everyone drinks "}
+											<span className="font-semibold text-amber-600 dark:text-amber-400">
+												{lr.count} {lr.count === 1 ? "sip" : "sips"}
+											</span>
+										</span>
+									</div>
+								))}
+							</div>
+						)}
 
 						<Separator className="my-2" />
 
@@ -509,6 +560,10 @@ export function PlayerTurnCard({
 						<Badge variant="default" className="text-sm px-3 py-1">
 							{specialLabel}
 						</Badge>
+					) : isLowestRoll ? (
+						<Badge variant="destructive" className="text-sm px-3 py-1">
+							Lowest!
+						</Badge>
 					) : (
 						<span className="text-2xl font-bold tabular-nums sm:text-3xl">
 							{latestRoll.score}
@@ -526,6 +581,19 @@ export function PlayerTurnCard({
 									{stairsSipsToAward} {stairsSipsToAward === 1 ? "sip" : "sips"}
 								</span>{" "}
 								to a player
+							</span>
+						</div>
+					)}
+
+					{/* Lowest roll — everyone drinks */}
+					{isLowestRoll && (
+						<div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
+							<TrendingDown className="size-4 text-amber-600 dark:text-amber-400" />
+							<span className="text-muted-foreground">
+								Rock bottom! {" "}
+								<span className="font-semibold text-amber-600 dark:text-amber-400">
+									Everyone takes a sip for that disaster
+								</span>
 							</span>
 						</div>
 					)}
