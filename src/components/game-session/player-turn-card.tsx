@@ -1,0 +1,395 @@
+"use client";
+
+import { useState } from "react";
+import { Dices, RotateCcw, Check, Beer, Hand, Footprints, Play } from "lucide-react";
+import {
+	Card,
+	CardContent,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { DiceDisplay } from "./dice-display";
+import { EnterDiceDialog } from "./enter-dice-dialog";
+import { AwardSipsDialog } from "./award-sips-dialog";
+import type { PlayerTurnModel, RoundModel } from "@/lib/models";
+import type { SelectGameParticipant } from "@/db/schema";
+import { formatSpecialRoll, getNameById } from "@/lib/game-helpers";
+
+interface PlayerTurnCardProps {
+	round: RoundModel;
+	currentTurn: PlayerTurnModel | null;
+	participants: SelectGameParticipant[];
+	currentParticipantId: number;
+}
+
+export function PlayerTurnCard({
+	round,
+	currentTurn,
+	participants,
+	currentParticipantId,
+}: PlayerTurnCardProps) {
+	const playerName = getNameById(currentParticipantId, participants);
+	const isRoundComplete = round.status === "completed";
+
+	// Current dice state — the latest roll's dice
+	const latestRoll =
+		currentTurn && currentTurn.rolls.length > 0
+			? currentTurn.rolls[currentTurn.rolls.length - 1]
+			: null;
+	const currentDice = latestRoll?.dice ?? [
+		{ value: 0, kept: false },
+		{ value: 0, kept: false },
+		{ value: 0, kept: false },
+	];
+	const rollCount = currentTurn?.totalRollsUsed ?? 0;
+	const hasDice = latestRoll !== null;
+	const canReRoll = hasDice && rollCount < round.maxRollsAllowed;
+	const isFirstRoll = !hasDice;
+	const specialLabel = latestRoll
+		? formatSpecialRoll(latestRoll.specialRollType)
+		: null;
+
+	// Compute the score to beat: lowest among completed, non-safe players
+	const completedNonSafe = round.turns.filter(
+		(t) => t.participantId !== currentParticipantId && !t.isSafe && t.finalScore !== null,
+	);
+	const scoreToBeat = completedNonSafe.length > 0
+		? Math.min(...completedNonSafe.map((t) => t.finalScore as number))
+		: null;
+	const scoreToBeatPlayer = scoreToBeat !== null
+		? completedNonSafe.find((t) => t.finalScore === scoreToBeat)
+		: null;
+	const scoreToBeatName = scoreToBeatPlayer
+		? getNameById(scoreToBeatPlayer.participantId, participants)
+		: null;
+
+	// Detect special roll states
+	const isStairsRoll =
+		latestRoll?.specialRollType === "stairs" ||
+		latestRoll?.specialRollType === "super_stairs";
+	const isSpecialRoll = isStairsRoll || latestRoll?.specialRollType === "three_of_a_kind";
+
+	// Stairs sips to award = player's position in round (1-indexed turnOrder)
+	const currentTurnOrder = currentTurn?.turnOrder ?? 0;
+	const stairsSipsToAward = isStairsRoll
+		? (latestRoll?.specialRollType === "super_stairs"
+			? (currentTurnOrder + 1) * 2
+			: currentTurnOrder + 1)
+		: 0;
+
+	// Track which dice are selected for re-rolling (inverted: selected = will be re-rolled)
+	const [selectedForReRoll, setSelectedForReRoll] = useState<Set<number>>(
+		new Set(),
+	);
+	const [enterDiceOpen, setEnterDiceOpen] = useState(false);
+	const [awardSipsOpen, setAwardSipsOpen] = useState(false);
+
+	function toggleReRoll(index: number) {
+		if (!canReRoll) return;
+		setSelectedForReRoll((prev) => {
+			const next = new Set(prev);
+			if (next.has(index)) {
+				next.delete(index);
+			} else {
+				next.add(index);
+			}
+			return next;
+		});
+	}
+
+	const diceToReRoll = isFirstRoll ? 3 : selectedForReRoll.size;
+	const hasSelection = diceToReRoll > 0;
+
+	function handleOpenEnterDice() {
+		// For first roll, all 3 dice; otherwise only selected
+		setEnterDiceOpen(true);
+	}
+
+	function handleDiceEntered(_values: number[]) {
+		// TODO: Wire up to actual game action
+		// values contains the dice values the player rolled
+		// For now this is a placeholder
+	}
+
+	function handleAwardSips(_targetParticipantId: number) {
+		// TODO: Wire up to actual game action
+		// targetParticipantId is the player who receives the sips
+		// For now this is a placeholder
+	}
+
+	// Round complete summary
+	if (isRoundComplete) {
+		const loserName = round.losingParticipantId
+			? getNameById(round.losingParticipantId, participants)
+			: null;
+
+		return (
+			<Card className="flex h-full w-full flex-col">
+				<CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
+					<CardTitle className="text-lg sm:text-xl">
+						Round {round.roundNumber} Complete
+					</CardTitle>
+				</CardHeader>
+				<Separator />
+				<CardContent className="flex flex-1 flex-col items-center gap-4 px-4 py-6 sm:px-6 sm:py-8">
+					{round.losingParticipantId && round.finalPenaltySips && (
+						<>
+							<div className="flex flex-col items-center gap-2 text-center">
+								<Beer className="size-10 text-destructive sm:size-12" />
+								<p className="text-lg font-semibold sm:text-xl">
+									{loserName} drinks!
+								</p>
+								<Badge
+									variant="destructive"
+									className="text-sm px-3 py-1"
+								>
+									{round.finalPenaltySips} sips
+								</Badge>
+							</div>
+
+							<Separator className="my-2" />
+
+							<div className="flex w-full flex-col gap-2">
+								<h4 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+									Final Scores
+								</h4>
+								{round.turns.map((t) => {
+									const name = getNameById(
+										t.participantId,
+										participants,
+									);
+									const isLoser =
+										t.participantId ===
+										round.losingParticipantId;
+									const special = formatSpecialRoll(
+										t.specialRollType,
+									);
+									return (
+										<div
+											key={t.id}
+											className={`flex items-center justify-between rounded-md border px-3 py-2 ${
+												isLoser
+													? "border-destructive/30 bg-destructive/5"
+													: ""
+											}`}
+										>
+											<div className="flex items-center gap-2">
+												<span
+													className={`text-sm font-medium ${isLoser ? "text-destructive" : ""}`}
+												>
+													{name}
+												</span>
+												{special && (
+													<Badge
+														variant="outline"
+														className="text-[10px] px-1.5 py-0"
+													>
+														{special}
+													</Badge>
+												)}
+											</div>
+											<span className="text-sm font-semibold tabular-nums">
+												{t.finalScore ?? "—"}
+											</span>
+										</div>
+									);
+								})}
+							</div>
+						</>
+					)}
+				</CardContent>
+
+				<Separator />
+
+				<CardFooter className="mt-auto px-4 py-3 sm:px-6 sm:py-4">
+					<Button className="w-full">
+						<Play className="size-4" />
+						Start Round {round.roundNumber + 1}
+						{loserName && (
+							<span className="ml-1 text-xs opacity-75">
+								— {loserName} starts
+							</span>
+						)}
+					</Button>
+				</CardFooter>
+			</Card>
+		);
+	}
+
+	return (
+		<>
+			<Card className="flex h-full w-full flex-col">
+				<CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
+					<div className="flex items-center justify-between gap-2">
+						<CardTitle className="text-lg sm:text-xl">
+							{playerName}&apos;s Turn
+						</CardTitle>
+						<Badge variant="outline" className="text-xs">
+							Roll {rollCount} / {round.maxRollsAllowed}
+						</Badge>
+					</div>
+				</CardHeader>
+
+				<Separator />
+
+				<CardContent className="flex flex-1 flex-col items-center justify-center gap-6 px-4 py-6 sm:px-6 sm:py-8">
+				{/* Dice display */}
+				<div className="flex flex-col items-center gap-3">
+				{hasDice ? (
+				<div className={isSpecialRoll
+					? "rounded-xl border-2 border-green-500 bg-green-500/5 p-3 shadow-sm shadow-green-500/20"
+					: ""
+				}>
+					<DiceDisplay
+						dice={currentDice}
+						selectedIndices={canReRoll ? selectedForReRoll : undefined}
+						size="lg"
+						interactive={canReRoll}
+						onToggleKeep={toggleReRoll}
+					/>
+				</div>
+				) : (
+						<div className="flex items-center gap-3">
+							{[1, 2, 3].map((i) => (
+								<div
+									key={i}
+									className="flex size-18 items-center justify-center rounded-lg border-2 border-dashed border-border"
+								>
+									<Dices className="size-6 text-muted-foreground/40" />
+								</div>
+							))}
+						</div>
+					)}
+
+				{/* Score or special roll label */}
+				{hasDice && (
+					isSpecialRoll && specialLabel ? (
+						<Badge variant="default" className="text-sm px-3 py-1">
+							{specialLabel}
+						</Badge>
+					) : (
+						<span className="text-2xl font-bold tabular-nums sm:text-3xl">
+							{latestRoll.score}
+						</span>
+					)
+				)}
+
+					{/* Stairs award info */}
+					{isStairsRoll && stairsSipsToAward > 0 && (
+						<div className="flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2 text-sm">
+							<Footprints className="size-4 text-green-600 dark:text-green-400" />
+							<span className="text-muted-foreground">
+								You can award{" "}
+								<span className="font-semibold text-green-600 dark:text-green-400">
+									{stairsSipsToAward} {stairsSipsToAward === 1 ? "sip" : "sips"}
+								</span>{" "}
+								to a player
+							</span>
+						</div>
+					)}
+				</div>
+
+				{/* Score to beat (hidden when stairs — player is safe) */}
+				{scoreToBeat !== null && !isStairsRoll && (
+					<div className="flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground">
+						<span>Beat</span>
+						<span className="font-semibold text-foreground tabular-nums">
+							{scoreToBeat}
+						</span>
+						{scoreToBeatName && (
+							<span className="text-xs">({scoreToBeatName})</span>
+						)}
+					</div>
+				)}
+
+			{/* Hint text */}
+			{canReRoll && (
+						<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+							{selectedForReRoll.size > 0 ? (
+								<>
+									<RotateCcw className="size-3" />
+									{selectedForReRoll.size === 3
+										? "All dice selected for re-roll"
+										: `${selectedForReRoll.size} ${selectedForReRoll.size === 1 ? "die" : "dice"} selected for re-roll`}
+								</>
+							) : (
+								<>
+									<Hand className="size-3" />
+									Tap dice to select them for re-rolling
+								</>
+							)}
+						</p>
+					)}
+				</CardContent>
+
+				<Separator />
+
+		{/* Action buttons — pinned to bottom */}
+		<CardFooter className="mt-auto flex flex-col gap-2 px-4 py-3 sm:flex-row sm:px-6 sm:py-4">
+			{isFirstRoll ? (
+				<Button
+					className="w-full"
+					onClick={handleOpenEnterDice}
+				>
+					<Hand className="size-4" />
+					Enter First Roll
+				</Button>
+			) : (
+				<>
+					{canReRoll && (
+						<Button
+							variant={isStairsRoll ? "outline" : "default"}
+							className="w-full sm:flex-1"
+							disabled={!hasSelection}
+							onClick={handleOpenEnterDice}
+						>
+							<RotateCcw className="size-4" />
+							Re-roll{hasSelection ? ` (${diceToReRoll})` : ""}
+						</Button>
+					)}
+				{isStairsRoll ? (
+					<Button
+						className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 text-white"
+						onClick={() => setAwardSipsOpen(true)}
+					>
+						<Footprints className="size-4" />
+						Award {stairsSipsToAward} {stairsSipsToAward === 1 ? "Sip" : "Sips"}
+					</Button>
+				) : (
+					<Button
+						variant={canReRoll ? "secondary" : "default"}
+						className="w-full sm:flex-1"
+					>
+						<Check className="size-4" />
+						End Turn
+					</Button>
+				)}
+				</>
+			)}
+		</CardFooter>
+			</Card>
+
+		{/* Enter real dice dialog */}
+		<EnterDiceDialog
+			open={enterDiceOpen}
+			onOpenChange={setEnterDiceOpen}
+			diceCount={isFirstRoll ? 3 : diceToReRoll}
+			onConfirm={handleDiceEntered}
+		/>
+
+		{/* Award sips dialog (stairs) */}
+		<AwardSipsDialog
+			open={awardSipsOpen}
+			onOpenChange={setAwardSipsOpen}
+			sipsToAward={stairsSipsToAward}
+			participants={participants}
+			currentParticipantId={currentParticipantId}
+			onConfirm={handleAwardSips}
+		/>
+	</>
+	);
+}

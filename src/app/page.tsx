@@ -1,65 +1,265 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Dices, Plus, X } from "lucide-react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { z } from "zod/v4";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import {
+	Form,
+	FormControl,
+	FormDescription,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormMessage,
+} from "@/components/ui/form";
+
+import { currentGameConfig } from "@/lib/signals/game";
+import { DiceLoading } from "@/components/dice-loading";
+import { createGameAction } from "@/app/actions";
+
+const MIN_PLAYERS = 3;
+const MAX_PLAYERS = 20;
+const MIN_LOADING_MS = 2000;
+
+
+const newGameSchema = z.object({
+	name: z.string().min(1, "Game name is required").max(100),
+	players: z
+		.array(
+			z.object({
+				name: z.string().min(1, "Player name is required").max(50),
+			}),
+		)
+		.min(MIN_PLAYERS, `At least ${MIN_PLAYERS} players are required`)
+		.max(MAX_PLAYERS, `Maximum ${MAX_PLAYERS} players allowed`)
+		.refine(
+			(players) => {
+				const names = players
+					.map((p) => p.name.trim().toLowerCase())
+					.filter((n) => n.length > 0);
+				return new Set(names).size === names.length;
+			},
+			{ message: "Player names must be unique" },
+		),
+	randomTurnOrder: z.boolean(),
+});
+
+type NewGameFormValues = z.infer<typeof newGameSchema>;
+
+const DEFAULT_PLAYERS = Array.from({ length: MIN_PLAYERS }, () => ({
+	name: "",
+}));
+
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+	const router = useRouter();
+	const [isLoading, setIsLoading] = useState(false);
+
+	const form = useForm<NewGameFormValues>({
+		resolver: zodResolver(newGameSchema),
+		defaultValues: {
+			name: "",
+			players: DEFAULT_PLAYERS,
+			randomTurnOrder: false,
+		},
+	});
+
+	const { fields, append, remove } = useFieldArray({
+		control: form.control,
+		name: "players",
+	});
+
+	const onSubmit = useCallback(
+		async (values: NewGameFormValues) => {
+			setIsLoading(true);
+			try {
+				currentGameConfig.value = {
+					name: values.name,
+					randomTurnOrder: values.randomTurnOrder,
+				};
+
+				const [result] = await Promise.all([
+					createGameAction({
+						name: values.name,
+						players: values.players,
+						randomTurnOrder: values.randomTurnOrder,
+					}),
+					new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS)),
+				]);
+
+				router.push(`/game-session/${result.id}`);
+			} catch {
+				setIsLoading(false);
+			}
+		},
+		[router],
+	);
+
+	const canRemove = fields.length > MIN_PLAYERS;
+	const canAdd = fields.length < MAX_PLAYERS;
+
+	return (
+		<div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6 md:py-12">
+			<div className="mb-8 flex flex-col items-center gap-2 md:mb-10">
+				<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground md:size-14">
+					<Dices className="size-6 md:size-7" />
+				</div>
+				<h1 className="text-xl font-bold tracking-tight text-foreground md:text-2xl">
+					Three Dice Game
+				</h1>
+			</div>
+
+			<Card className="w-full max-w-sm sm:max-w-md">
+				{isLoading ? (
+					<DiceLoading />
+				) : (
+					<>
+						<CardHeader className="px-4 pt-5 pb-0 sm:px-6 sm:pt-6">
+							<CardTitle className="text-lg sm:text-xl">
+								Start New Game
+							</CardTitle>
+							<CardDescription className="text-sm">
+								Configure your game session and start playing.
+							</CardDescription>
+						</CardHeader>
+						<Form {...form}>
+							<form onSubmit={form.handleSubmit(onSubmit)}>
+								<CardContent className="flex flex-col gap-5 px-4 sm:gap-6 sm:px-6">
+									<FormField
+										control={form.control}
+										name="name"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel>Game Name</FormLabel>
+												<FormControl>
+													<Input
+														placeholder="e.g. Friday Night Dice"
+														autoComplete="off"
+														{...field}
+													/>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+
+									<div className="flex flex-col gap-3">
+										<div className="flex items-center justify-between">
+											<FormLabel>
+												Players ({fields.length})
+											</FormLabel>
+											{canAdd && (
+												<Button
+													type="button"
+													variant="ghost"
+													size="sm"
+													onClick={() => append({ name: "" })}
+												>
+													<Plus className="size-4" />
+													Add Player
+												</Button>
+											)}
+										</div>
+
+										<div className="flex flex-col gap-2">
+											{fields.map((field, index) => (
+												<FormField
+													key={field.id}
+													control={form.control}
+													name={`players.${index}.name`}
+													render={({ field }) => (
+														<FormItem>
+															<div className="flex items-center gap-2">
+																<FormControl>
+																	<Input
+																		placeholder={`Player ${index + 1}`}
+																		autoComplete="off"
+																		{...field}
+																	/>
+																</FormControl>
+																{canRemove && (
+																	<Button
+																		type="button"
+																		variant="ghost"
+																		size="icon"
+																		className="size-9 shrink-0 text-muted-foreground hover:text-destructive"
+																		onClick={() => remove(index)}
+																	>
+																		<X className="size-4" />
+																		<span className="sr-only">
+																			Remove player {index + 1}
+																		</span>
+																	</Button>
+																)}
+															</div>
+															<FormMessage />
+														</FormItem>
+													)}
+												/>
+											))}
+										</div>
+
+										{form.formState.errors.players?.root && (
+											<p className="text-sm text-destructive">
+												{form.formState.errors.players.root.message}
+											</p>
+										)}
+
+										{canAdd && (
+											<p className="text-xs text-muted-foreground">
+												{MIN_PLAYERS}&ndash;{MAX_PLAYERS} players allowed
+											</p>
+										)}
+									</div>
+
+									<FormField
+										control={form.control}
+										name="randomTurnOrder"
+										render={({ field }) => (
+											<FormItem className="flex flex-row items-center justify-between gap-4 rounded-lg border p-3 sm:p-4">
+												<div className="space-y-0.5">
+													<FormLabel className="text-sm font-medium sm:text-base">
+														Random Turn Order
+													</FormLabel>
+													<FormDescription className="text-xs sm:text-sm">
+														Randomize player order each round.
+													</FormDescription>
+												</div>
+												<FormControl>
+													<Switch
+														checked={field.value}
+														onCheckedChange={field.onChange}
+													/>
+												</FormControl>
+											</FormItem>
+										)}
+									/>
+								</CardContent>
+								<CardFooter className="px-4 pt-2 pb-5 sm:px-6 sm:pb-6">
+									<Button type="submit" size="lg" className="w-full">
+										Start Game
+									</Button>
+								</CardFooter>
+							</form>
+						</Form>
+					</>
+				)}
+			</Card>
+		</div>
+	);
 }
