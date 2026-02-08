@@ -2,7 +2,8 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Dices, Plus, X, Eye, EyeOff } from "lucide-react";
+import { Plus, X, Eye, EyeOff } from "lucide-react";
+import { ThreeDiceLogo } from "@/components/three-dice-logo";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -118,8 +119,8 @@ export function NewGameForm() {
 	return (
 		<div className="flex w-full flex-col items-center">
 			<div className="mb-8 flex flex-col items-center gap-2 md:mb-10">
-				<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground md:size-14">
-					<Dices className="size-6 md:size-7" />
+				<div className="flex items-center justify-center rounded-xl bg-primary text-primary-foreground p-2 md:p-2.5">
+					<ThreeDiceLogo size="md" />
 				</div>
 				<h1 className="text-xl font-bold tracking-tight text-foreground md:text-2xl">
 					Three Dice Game

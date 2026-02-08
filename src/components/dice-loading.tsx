@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Dices } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { ThreeDiceLogo } from "@/components/three-dice-logo";
 import { DiceSpinner } from "@/components/dice-spinner";
 
 const LOADING_MESSAGES = [
@@ -48,8 +48,8 @@ export function DiceLoadingPage({ message, cycleMessages }: DiceLoadingProps) {
 	return (
 		<div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6 md:py-12">
 			<div className="mb-8 flex flex-col items-center gap-2 md:mb-10">
-				<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground md:size-14">
-					<Dices className="size-6 md:size-7" />
+				<div className="flex items-center justify-center rounded-xl bg-primary text-primary-foreground p-2 md:p-2.5">
+					<ThreeDiceLogo size="md" />
 				</div>
 				<h1 className="text-xl font-bold tracking-tight text-foreground md:text-2xl">
 					Three Dice Game

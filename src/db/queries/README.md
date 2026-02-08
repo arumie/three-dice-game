@@ -237,21 +237,21 @@ See `CONFIG.md` for full configuration documentation.
 
 - `createPlayerTurn(data)` - Create a new turn
 - `getPlayerTurnById(id)` - Get turn by ID
-- `getPlayerTurnsByRound(roundId)` - Get all turns in a round
+- `getPlayerTurnsByRound(roundId, gameSessionId)` - Get all turns in a round
 - `getPlayerTurnsBySession(sessionId)` - Get all turns in a game
 - `getPlayerTurnsByParticipant(participantId)` - Get all turns for a participant
-- `getPlayerTurn(roundId, participantId)` - Get specific turn
-- `hasParticipantTakenTurn(roundId, participantId)` - Check if turn exists
+- `getPlayerTurn(roundId, participantId, gameSessionId)` - Get specific turn
+- `hasParticipantTakenTurn(roundId, participantId, gameSessionId)` - Check if turn exists
 
 ### Rolls (`rolls.ts`)
 
 - `createRoll(data)` - Create a new roll
 - `getRollById(id)` - Get roll by ID
-- `getRollsByPlayerTurn(playerTurnId)` - Get all rolls for a turn
+- `getRollsByPlayerTurn(playerTurnId, gameSessionId)` - Get all rolls for a turn
 - `getRollsBySession(sessionId)` - Get all rolls in a game
-- `getLatestRoll(playerTurnId)` - Get the most recent roll for a turn
-- `getRollByNumber(playerTurnId, rollNumber)` - Get specific roll
-- `countRollsByPlayerTurn(playerTurnId)` - Count rolls for a turn
+- `getLatestRoll(playerTurnId, gameSessionId)` - Get the most recent roll for a turn
+- `getRollByNumber(playerTurnId, rollNumber, gameSessionId)` - Get specific roll
+- `countRollsByPlayerTurn(playerTurnId, gameSessionId)` - Count rolls for a turn
 
 ### Common Queries (`common.ts`)
 

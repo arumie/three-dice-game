@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Dices, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { ThreeDiceLogo } from "@/components/three-dice-logo";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -20,8 +21,8 @@ export default function GameSessionNotFound() {
 	return (
 		<div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6 md:py-12">
 			<div className="mb-8 flex flex-col items-center gap-2 md:mb-10">
-				<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground md:size-14">
-					<Dices className="size-6 md:size-7" />
+				<div className="flex items-center justify-center rounded-xl bg-primary text-primary-foreground p-2 md:p-2.5">
+					<ThreeDiceLogo size="md" />
 				</div>
 				<h1 className="text-xl font-bold tracking-tight text-foreground md:text-2xl">
 					Three Dice Game

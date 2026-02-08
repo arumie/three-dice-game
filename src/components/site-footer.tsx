@@ -1,4 +1,4 @@
-import { Dices } from "lucide-react";
+import { ThreeDiceLogo } from "@/components/three-dice-logo";
 
 const APP_VERSION = "v0.1.0";
 const GITHUB_URL = "https://github.com/arumie";
@@ -8,7 +8,7 @@ export function SiteFooter() {
 		<footer className="w-full pb-16 pt-8 sm:pb-8">
 			<div className="mx-auto flex max-w-md flex-col items-center gap-3 px-4 text-xs text-muted-foreground sm:flex-row sm:justify-between sm:px-6">
 				<div className="flex items-center gap-1.5">
-					<Dices className="size-3.5" />
+					<ThreeDiceLogo size="xs" />
 					<span>Three Dice Game</span>
 					<span className="text-muted-foreground/60">{APP_VERSION}</span>
 				</div>

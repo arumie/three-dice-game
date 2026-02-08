@@ -114,12 +114,23 @@ The `playerOrder` JSON array in rounds enables:
 
 ```
 src/lib/
-├── index.ts          - Convenient exports for all public APIs
-├── models.ts         - Domain model interfaces
-├── mappers.ts        - Data fetching + transformation
-├── game-service.ts   - High-level game operations
-├── game-utils.ts     - Pure calculation functions
-└── README.md         - This file
+├── index.ts            - Convenient exports for all public APIs
+├── models.ts           - Domain model interfaces
+├── mappers.ts          - Pure transformation functions (DB → domain models)
+├── game-service.ts     - High-level game operations (orchestrates queries + mappers)
+├── game-utils.ts       - Pure calculation functions (scoring, special rolls, dice)
+├── game-helpers.ts     - Helper functions (participant names, current round, stats)
+├── game-auth.ts        - Cookie-based game session authentication
+├── cached-queries.ts   - Next.js cache wrappers with tag-based invalidation
+├── cache-tags.ts       - Cache tag utilities for revalidation
+├── utils.ts            - General utilities (cn function for className merging)
+├── signals/
+│   ├── game.ts         - Game configuration signal (client state)
+│   ├── theme.ts        - Theme state signal (dark/light mode)
+│   └── ui.ts           - UI state signal (drawers, dialogs, etc.)
+├── mock/
+│   └── game-session.ts - Mock game data for development/testing
+└── README.md           - This file
 ```
 
 Import everything you need from the main index:
@@ -227,6 +238,30 @@ export async function getLatestRound(gameSessionId: number) {
 
 Services handle data fetching and organization, then delegate transformation to mappers.
 
+### 5. Authentication (`game-auth.ts`)
+
+Cookie-based authentication for game sessions. Each game is password-protected and access is granted by setting a session cookie after password verification:
+
+- `verifyGamePassword(gameSessionId, password)` - Verify password and set auth cookie
+- `requireGameAuth(gameSessionId)` - Guard that throws if not authenticated
+- `checkGameAuth(gameSessionId)` - Check if the user has a valid auth cookie
+
+### 6. Client State (`signals/`)
+
+Preact Signals for lightweight reactive client state management:
+
+- **`game.ts`** - Game configuration signal (shared game config across components)
+- **`theme.ts`** - Theme state signal (dark/light mode preference)
+- **`ui.ts`** - UI state signal (drawer/dialog visibility, etc.)
+
+### 7. Helpers (`game-helpers.ts`)
+
+Convenience functions that sit between services and components:
+
+- `getParticipantName(participant)` - Resolve display name for registered or guest players
+- `getCurrentRound(game)` - Get the active round from a game model
+- `computeParticipantStats(game)` - Aggregate per-participant statistics from game data
+
 ## Usage Examples
 
 ### Complete Game Flow
@@ -321,10 +356,11 @@ const rolls = await getRollsByPlayerTurn(turnId, gameSessionId);
 
 ### Caching
 
-For real-time games, consider caching:
-- Current game state in memory (Redis)
-- Round summaries while round is in progress
-- Invalidate cache when new rolls added
+Game state is cached using Next.js's built-in caching with tag-based invalidation:
+
+- **`cached-queries.ts`** - Wraps database queries with `unstable_cache` and cache tags
+- **`cache-tags.ts`** - Defines cache tag utilities (per-game tags and a global games tag)
+- **Invalidation** - Server actions call `revalidateTag()` after mutations to refresh data immediately
 
 ### Optimization Tips
 
