@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Dices, Plus, X } from "lucide-react";
+import { Dices, Plus, X, Eye, EyeOff } from "lucide-react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod/v4";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,6 +17,12 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupButton,
+	InputGroupInput,
+} from "@/components/ui/input-group";
 import { Switch } from "@/components/ui/switch";
 import {
 	Form,
@@ -37,6 +43,7 @@ const MIN_LOADING_MS = 2000;
 
 const newGameSchema = z.object({
 	name: z.string().min(1, "Game name is required").max(100),
+	password: z.string().min(1, "Password is required").max(100),
 	players: z
 		.array(
 			z.object({
@@ -66,11 +73,13 @@ const DEFAULT_PLAYERS = Array.from({ length: MIN_PLAYERS }, () => ({
 export function NewGameForm() {
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
+	const [showPassword, setShowPassword] = useState(false);
 
 	const form = useForm<NewGameFormValues>({
 		resolver: zodResolver(newGameSchema),
 		defaultValues: {
 			name: "",
+			password: "",
 			players: DEFAULT_PLAYERS,
 			randomTurnOrder: false,
 		},
@@ -88,6 +97,7 @@ export function NewGameForm() {
 				const [result] = await Promise.all([
 					createGameAction({
 						name: values.name,
+						password: values.password,
 						players: values.players,
 						randomTurnOrder: values.randomTurnOrder,
 					}),
@@ -106,7 +116,7 @@ export function NewGameForm() {
 	const canAdd = fields.length < MAX_PLAYERS;
 
 	return (
-		<div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6 md:py-12">
+		<div className="flex w-full flex-col items-center">
 			<div className="mb-8 flex flex-col items-center gap-2 md:mb-10">
 				<div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground md:size-14">
 					<Dices className="size-6 md:size-7" />
@@ -132,25 +142,64 @@ export function NewGameForm() {
 						<Form {...form}>
 							<form onSubmit={form.handleSubmit(onSubmit)}>
 								<CardContent className="flex flex-col gap-5 px-4 sm:gap-6 sm:px-6">
-									<FormField
-										control={form.control}
-										name="name"
-										render={({ field }) => (
-											<FormItem>
-												<FormLabel>Game Name</FormLabel>
+								<FormField
+									control={form.control}
+									name="name"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Game Name</FormLabel>
+											<FormControl>
+												<Input
+													placeholder="e.g. Friday Night Dice"
+													autoComplete="off"
+													{...field}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<FormField
+									control={form.control}
+									name="password"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel>Game Password</FormLabel>
+											<InputGroup>
 												<FormControl>
-													<Input
-														placeholder="e.g. Friday Night Dice"
+													<InputGroupInput
+														type={showPassword ? "text" : "password"}
+														placeholder="Enter a password"
 														autoComplete="off"
 														{...field}
 													/>
 												</FormControl>
-												<FormMessage />
-											</FormItem>
-										)}
-									/>
+												<InputGroupAddon align="inline-end">
+													<InputGroupButton
+														size="icon-xs"
+														onClick={() => setShowPassword((v) => !v)}
+													>
+														{showPassword ? (
+															<EyeOff className="size-4" />
+														) : (
+															<Eye className="size-4" />
+														)}
+														<span className="sr-only">
+															{showPassword ? "Hide" : "Show"} password
+														</span>
+													</InputGroupButton>
+												</InputGroupAddon>
+											</InputGroup>
+											<FormDescription className="text-xs sm:text-sm">
+												Required to access the game session.
+											</FormDescription>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
 
-									<div className="flex flex-col gap-3">
+								<div className="flex flex-col gap-3">
 										<div className="flex items-center justify-between">
 											<FormLabel>
 												Players ({fields.length})

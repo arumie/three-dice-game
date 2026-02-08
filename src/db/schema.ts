@@ -40,6 +40,7 @@ export type GameSessionConfig = {
 export const gameSessionsTable = pgTable("game_sessions", {
 	id: serial("id").primaryKey(),
 	ownerId: text("owner_id").notNull(),
+	password: varchar("password", { length: 100 }).notNull().default(""),
 	config: json("config").notNull().$type<GameSessionConfig>(),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	completedAt: timestamp("completed_at"),

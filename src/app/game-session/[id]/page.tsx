@@ -6,6 +6,7 @@ import { RoundInfoCard } from "@/components/game-session/round-info-card";
 import { PlayerTurnCard } from "@/components/game-session/player-turn-card";
 import { MobileGameDrawer } from "@/components/game-session/mobile-game-drawer";
 import { DebugPanel } from "@/components/game-session/debug-panel";
+import { PasswordGate } from "@/components/game-session/password-gate";
 
 interface GameSessionPageProps {
 	params: Promise<{ id: string }>;
@@ -49,55 +50,59 @@ export default async function GameSessionPage({
 	// If there's no round yet, show a "waiting" state
 	if (!currentRound) {
 		return (
-			<div className="flex flex-1 flex-col items-center justify-center px-4 py-8">
-				<p className="text-muted-foreground">
-					Waiting for the game to start...
-				</p>
-			</div>
+			<PasswordGate gameSessionId={gameSessionId}>
+				<div className="flex flex-1 flex-col items-center justify-center px-4 py-8">
+					<p className="text-muted-foreground">
+						Waiting for the game to start...
+					</p>
+				</div>
+			</PasswordGate>
 		);
 	}
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6 lg:py-8">
-			{/* Desktop: Game state card at top */}
-			<div className="hidden lg:block">
-				<GameStateCard session={session} stats={stats} gameSessionId={gameSessionId} />
-			</div>
-
-			{/* Desktop: Two-column layout / Mobile: single column */}
-			<div className="flex flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
-				{/* Desktop: Round info sidebar */}
-				<div className="hidden lg:flex lg:w-[340px] lg:shrink-0 xl:w-[380px]">
-					<RoundInfoCard
-						round={currentRound}
-						participants={session.participants}
-						currentParticipantId={currentParticipantId}
-					/>
+		<PasswordGate gameSessionId={gameSessionId}>
+			<div className="flex flex-1 flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6 lg:py-8">
+				{/* Desktop: Game state card at top */}
+				<div className="hidden lg:block">
+					<GameStateCard session={session} stats={stats} gameSessionId={gameSessionId} />
 				</div>
 
-				{/* Main play area — always visible */}
-				<div className="flex flex-1">
-					<PlayerTurnCard
-						gameSessionId={gameSessionId}
-						round={currentRound}
-						currentTurn={currentTurn}
-						participants={session.participants}
-						currentParticipantId={currentParticipantId}
-					/>
+				{/* Desktop: Two-column layout / Mobile: single column */}
+				<div className="flex flex-1 flex-col gap-4 lg:flex-row lg:items-stretch">
+					{/* Desktop: Round info sidebar */}
+					<div className="hidden lg:flex lg:w-[340px] lg:shrink-0 xl:w-[380px]">
+						<RoundInfoCard
+							round={currentRound}
+							participants={session.participants}
+							currentParticipantId={currentParticipantId}
+						/>
+					</div>
+
+					{/* Main play area — always visible */}
+					<div className="flex flex-1">
+						<PlayerTurnCard
+							gameSessionId={gameSessionId}
+							round={currentRound}
+							currentTurn={currentTurn}
+							participants={session.participants}
+							currentParticipantId={currentParticipantId}
+						/>
+					</div>
 				</div>
+
+				{/* Mobile: floating sheet triggers */}
+				<MobileGameDrawer
+					session={session}
+					stats={stats}
+					currentRound={currentRound}
+					currentParticipantId={currentParticipantId}
+					gameSessionId={gameSessionId}
+				/>
+
+				{/* Debug tools */}
+				<DebugPanel session={session} gameSessionId={gameSessionId} />
 			</div>
-
-		{/* Mobile: floating sheet triggers */}
-		<MobileGameDrawer
-			session={session}
-			stats={stats}
-			currentRound={currentRound}
-			currentParticipantId={currentParticipantId}
-			gameSessionId={gameSessionId}
-		/>
-
-		{/* Debug tools */}
-		<DebugPanel session={session} gameSessionId={gameSessionId} />
-	</div>
+		</PasswordGate>
 	);
 }

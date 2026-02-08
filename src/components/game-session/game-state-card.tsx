@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
 	Beer,
@@ -12,6 +13,7 @@ import {
 	Crown,
 	Skull,
 	Toilet,
+	Home,
 } from "lucide-react";
 import {
 	Card,
@@ -113,6 +115,12 @@ export function GameStateCard({ session, stats, gameSessionId }: GameStateCardPr
 							<Badge variant={getStatusVariant(session.status)} className="hidden sm:inline-flex">
 								{formatStatus(session.status)}
 							</Badge>
+							<Button variant="ghost" size="icon" className="size-8" asChild>
+								<Link href="/">
+									<Home className="size-4" />
+									<span className="sr-only">Home</span>
+								</Link>
+							</Button>
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<Button variant="ghost" size="icon" className="size-8">

@@ -5,18 +5,25 @@ import {
 	completeGameSession,
 	createGameSession,
 	createGuestParticipant,
+	getGameSessionById,
 } from "@/db/queries";
 import { createRound, endCurrentTurn, recordRoll } from "@/lib/game-service";
-import { gameSessionTag } from "@/lib/cache-tags";
+import { gameSessionTag, ALL_GAMES_TAG } from "@/lib/cache-tags";
+import {
+	requireGameAuth,
+	setGameAuthCookie,
+} from "@/lib/game-auth";
 
 export async function createGameAction(data: {
 	name: string;
+	password: string;
 	players: { name: string }[];
 	randomTurnOrder: boolean;
 }) {
 	// 1. Create the game session
 	const session = await createGameSession({
 		ownerId: "local",
+		password: data.password,
 		config: {
 			name: data.name,
 			randomTurnOrder: data.randomTurnOrder,
@@ -33,7 +40,41 @@ export async function createGameAction(data: {
 	// 3. Create the first round (first participant starts)
 	await createRound(session.id);
 
+	// 4. Set the auth cookie so the creator is immediately authenticated
+	await setGameAuthCookie(session.id, data.password);
+
+	// Invalidate the all-games list cache
+	updateTag(ALL_GAMES_TAG);
+
 	return { id: session.id };
+}
+
+/**
+ * Verify a game password and set an HttpOnly auth cookie on success.
+ */
+export async function verifyGamePasswordAction(
+	gameSessionId: number,
+	password: string,
+): Promise<boolean> {
+	const session = await getGameSessionById(gameSessionId);
+	if (!session) return false;
+	if (session.password !== password) return false;
+	await setGameAuthCookie(gameSessionId, password);
+	return true;
+}
+
+/**
+ * Check if the caller is already authenticated for a game session.
+ */
+export async function checkGameAuthAction(
+	gameSessionId: number,
+): Promise<boolean> {
+	try {
+		await requireGameAuth(gameSessionId);
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 /**
@@ -46,8 +87,10 @@ export async function rollDiceAction(data: {
 	diceValues: number[];
 	reRollIndices?: number[];
 }) {
+	await requireGameAuth(data.gameSessionId);
 	await recordRoll(data.gameSessionId, data.diceValues, data.reRollIndices);
 	updateTag(gameSessionTag(data.gameSessionId));
+	updateTag(ALL_GAMES_TAG);
 }
 
 /**
@@ -59,8 +102,10 @@ export async function endTurnAction(data: {
 	gameSessionId: number;
 	awardedToParticipantId?: number;
 }) {
+	await requireGameAuth(data.gameSessionId);
 	await endCurrentTurn(data.gameSessionId, data.awardedToParticipantId);
 	updateTag(gameSessionTag(data.gameSessionId));
+	updateTag(ALL_GAMES_TAG);
 }
 
 /**
@@ -69,8 +114,10 @@ export async function endTurnAction(data: {
 export async function startRoundAction(data: {
 	gameSessionId: number;
 }) {
+	await requireGameAuth(data.gameSessionId);
 	await createRound(data.gameSessionId);
 	updateTag(gameSessionTag(data.gameSessionId));
+	updateTag(ALL_GAMES_TAG);
 }
 
 /**
@@ -79,8 +126,10 @@ export async function startRoundAction(data: {
 export async function endGameAction(data: {
 	gameSessionId: number;
 }) {
+	await requireGameAuth(data.gameSessionId);
 	await completeGameSession(data.gameSessionId);
 	updateTag(gameSessionTag(data.gameSessionId));
+	updateTag(ALL_GAMES_TAG);
 }
 
 /**

@@ -13,6 +13,7 @@ import {
 	Plus,
 	CircleArrowDown,
 	Toilet,
+	Home,
 } from "lucide-react";
 import {
 	Card,
@@ -137,7 +138,7 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 						return (
 							<div
 								key={s.participantId}
-								className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors ${
+								className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors sm:gap-4 sm:rounded-xl sm:px-4 sm:py-3 ${
 									isWinner
 										? "border-yellow-500/30 bg-yellow-500/5"
 										: isMostDrunk
@@ -147,7 +148,7 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 							>
 								{/* Rank */}
 								<div
-									className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+									className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold sm:size-9 sm:text-base ${
 										idx === 0
 											? "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"
 											: idx === 1
@@ -156,28 +157,28 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 									}`}
 								>
 									{isWinner ? (
-										<Crown className="size-3.5" />
+										<Crown className="size-3.5 sm:size-5" />
 									) : (
 										idx + 1
 									)}
 								</div>
 
 								{/* Name */}
-								<span className="flex-1 truncate text-sm font-medium">
+								<span className="flex-1 truncate text-sm font-medium sm:text-base sm:font-semibold">
 									{name}
 								</span>
 
 								{/* Stats */}
-								<div className="flex items-center gap-3 text-xs tabular-nums">
+								<div className="flex items-center gap-3 text-xs tabular-nums sm:gap-4 sm:text-base">
 									<span
-										className="flex items-center gap-1 font-medium text-primary"
+										className="flex items-center gap-1 font-medium text-primary sm:gap-1.5 sm:font-bold"
 										title="Rounds won"
 									>
-										<Trophy className="size-3" />
+										<Trophy className="size-3 sm:size-5" />
 										{s.roundsWon}
 									</span>
 									<span
-										className={`flex items-center gap-1 font-medium ${
+										className={`flex items-center gap-1 font-medium sm:gap-1.5 sm:font-bold ${
 											isMostDrunk
 												? "text-red-500"
 												: "text-muted-foreground"
@@ -185,45 +186,45 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 										title="Sips drunk"
 									>
 										{isMostDrunk ? (
-											<Skull className="size-3" />
+											<Skull className="size-3 sm:size-5" />
 										) : (
-											<Beer className="size-3" />
+											<Beer className="size-3 sm:size-5" />
 										)}
 										{s.sipsDrunk}
 									</span>
 									{s.sipsAwarded > 0 && (
 										<span
-											className="flex items-center gap-1 font-medium text-green-600 dark:text-green-400"
+											className="flex items-center gap-1 font-medium text-green-600 dark:text-green-400 sm:gap-1.5 sm:font-bold"
 											title="Sips awarded"
 										>
-											<Footprints className="size-3" />
+											<Footprints className="size-3 sm:size-5" />
 											{s.sipsAwarded}
 										</span>
 									)}
 									{s.sipsReceived > 0 && (
 										<span
-											className="flex items-center gap-1 font-medium text-orange-500"
+											className="flex items-center gap-1 font-medium text-orange-500 sm:gap-1.5 sm:font-bold"
 											title="Sips received from stairs"
 										>
-											<CircleArrowDown className="size-3" />
+											<CircleArrowDown className="size-3 sm:size-5" />
 											{s.sipsReceived}
 										</span>
 									)}
 									{specialTotal > 0 && (
 										<span
-											className="flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400"
+											className="flex items-center gap-1 font-medium text-amber-600 dark:text-amber-400 sm:gap-1.5 sm:font-bold"
 											title={`${s.threeOfAKindCount} three of a kind, ${s.stairsCount} stairs, ${s.superStairsCount} super stairs`}
 										>
-											<Dices className="size-3" />
+											<Dices className="size-3 sm:size-5" />
 											{specialTotal}
 										</span>
 									)}
 									{s.shitStairsCount > 0 && (
 										<span
-											className="flex items-center gap-1 font-medium text-amber-800 dark:text-amber-600"
+											className="flex items-center gap-1 font-medium text-amber-800 dark:text-amber-600 sm:gap-1.5 sm:font-bold"
 											title="Shit stairs"
 										>
-											<Toilet className="size-3" />
+											<Toilet className="size-3 sm:size-5" />
 											{s.shitStairsCount}
 										</span>
 									)}
@@ -236,7 +237,13 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 
 			<Separator />
 
-			<CardFooter className="px-4 py-4 sm:px-6">
+			<CardFooter className="flex-col gap-2 px-4 py-4">
+				<Button asChild variant="outline" className="w-full">
+					<Link href="/games">
+						<Home className="size-4" />
+						All Games
+					</Link>
+				</Button>
 				<Button asChild className="w-full">
 					<Link href="/">
 						<Plus className="size-4" />
