@@ -32,7 +32,7 @@ export function ThemeToggle() {
 			variant="outline"
 			size="icon"
 			onClick={toggleTheme}
-			className="fixed right-4 bottom-4 z-50 size-8 rounded-full shadow-lg backdrop-blur supports-backdrop-filter:bg-background/80"
+			className="hidden lg:fixed lg:inline-flex right-4 bottom-4 z-50 size-8 rounded-full shadow-lg backdrop-blur supports-backdrop-filter:bg-background/80"
 			aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
 		>
 			{isDark ? (

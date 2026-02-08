@@ -42,7 +42,7 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
 	}
 
 	return (
-		<div className="fixed bottom-4 left-4 z-50 flex items-end gap-1.5">
+		<div className="fixed bottom-4 left-4 z-50 hidden items-end gap-1.5 lg:flex">
 			{/* Toggle button */}
 			<Button
 				variant="outline"

@@ -4,6 +4,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 import { ThemeToggle } from "@/components/theme-toggle";
+import { GameRulesDialog } from "@/components/game-rules-dialog";
+import { MobileToolbar } from "@/components/mobile-toolbar";
 import { SiteFooter } from "@/components/site-footer";
 
 const geistSans = Geist({
@@ -42,6 +44,8 @@ export default function RootLayout({
           {children}
         </ViewTransition>
         <SiteFooter />
+        <GameRulesDialog />
+        <MobileToolbar />
         <ThemeToggle />
       </body>
     </html>
