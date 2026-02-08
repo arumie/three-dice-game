@@ -83,9 +83,11 @@ export function EnterDiceDialog({
 	const allSelected = values.length > 0 && values.every((v) => v !== null);
 
 	function randomRoll() {
-		setValues((prev) =>
-			prev.map(() => Math.floor(Math.random() * 6) + 1),
+		const rolled = Array.from({ length: diceCount }, () =>
+			Math.floor(Math.random() * 6) + 1,
 		);
+		onConfirm(rolled);
+		onOpenChange(false);
 	}
 
 	function handleConfirm() {

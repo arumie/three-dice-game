@@ -7,7 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "db:setup": "node -e \"const fs=require('fs'); if(!fs.existsSync('.env.local')){fs.copyFileSync('.env.example','.env.local');console.log('Created .env.local from .env.example')}else{console.log('.env.local already exists, skipping')}\" && docker compose up -d && drizzle-kit push",
+    "db:start": "docker compose up -d",
+    "db:stop": "docker compose down",
+    "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -19,6 +26,7 @@
     "drizzle-orm": "^0.44.6",
     "lucide-react": "^0.563.0",
     "next": "16.0.0",
+    "postgres": "^3.4.8",
     "radix-ui": "^1.4.3",
     "react": "19.2.0",
     "react-dom": "19.2.0",

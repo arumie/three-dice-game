@@ -22,9 +22,7 @@ interface DiceLoadingProps {
 }
 
 export function DiceLoading({ message, cycleMessages = true }: DiceLoadingProps) {
-	const [messageIndex, setMessageIndex] = useState(() =>
-		Math.floor(Math.random() * LOADING_MESSAGES.length),
-	);
+	const [messageIndex, setMessageIndex] = useState(0);
 
 	useEffect(() => {
 		if (!cycleMessages || message) return;

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Dices, RotateCcw, Check, Beer, Hand, Footprints, Play } from "lucide-react";
+import { useState, useTransition, useOptimistic } from "react";
+import { Dices, RotateCcw, Check, Beer, Hand, Footprints, Play, Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
 import {
 	Card,
 	CardContent,
@@ -15,47 +15,160 @@ import { Separator } from "@/components/ui/separator";
 import { DiceDisplay } from "./dice-display";
 import { EnterDiceDialog } from "./enter-dice-dialog";
 import { AwardSipsDialog } from "./award-sips-dialog";
-import type { PlayerTurnModel, RoundModel } from "@/lib/models";
-import type { SelectGameParticipant } from "@/db/schema";
+import type { PlayerTurnModel, RollModel, RoundModel } from "@/lib/models";
+import type { Dice, SelectGameParticipant } from "@/db/schema";
 import { formatSpecialRoll, getNameById } from "@/lib/game-helpers";
+import { calculateScore, detectSpecialRoll, isSafeRoll } from "@/lib/game-utils";
+import {
+	rollDiceAction,
+	endTurnAction,
+	startRoundAction,
+} from "@/app/actions";
 
 interface PlayerTurnCardProps {
+	gameSessionId: number;
 	round: RoundModel;
 	currentTurn: PlayerTurnModel | null;
 	participants: SelectGameParticipant[];
 	currentParticipantId: number;
 }
 
+type OptimisticAction =
+	| { type: "roll"; dice: Dice }
+	| { type: "endTurn" };
+
+function applyOptimisticUpdate(
+	currentRound: RoundModel,
+	action: OptimisticAction,
+): RoundModel {
+	if (action.type === "roll") {
+		const { dice } = action;
+		const score = calculateScore(dice);
+		const specialRollType = detectSpecialRoll(dice);
+
+		const newRoll: RollModel = {
+			id: -Date.now(),
+			gameSessionId: currentRound.gameSessionId,
+			playerTurnId: -1,
+			rollNumber: 1,
+			dice,
+			rolledAt: new Date(),
+			score,
+			specialRollType,
+		};
+
+		// Find the active (in-progress) turn
+		const activeTurn = currentRound.turns.find((t) => !t.isComplete && t.totalRollsUsed > 0);
+
+		if (activeTurn) {
+			// Re-roll: add roll to existing turn
+			newRoll.playerTurnId = activeTurn.id;
+			newRoll.rollNumber = activeTurn.totalRollsUsed + 1;
+			const isSafe = isSafeRoll(specialRollType);
+			const updatedTurns = currentRound.turns.map((t) => {
+				if (t.id !== activeTurn.id) return t;
+				const updatedRolls = [...t.rolls, newRoll];
+				return {
+					...t,
+					rolls: updatedRolls,
+					totalRollsUsed: updatedRolls.length,
+					finalScore: isSafe ? null : score,
+					isSafe,
+					specialRollType,
+				};
+			});
+			return { ...currentRound, turns: updatedTurns };
+		}
+
+		// First roll: create optimistic turn
+		const nextParticipantId = currentRound.playerOrder.find(
+			(pid) => !currentRound.turns.some((t) => t.participantId === pid),
+		);
+		if (nextParticipantId == null) return currentRound;
+
+		const isSafe = isSafeRoll(specialRollType);
+		const newTurn: PlayerTurnModel = {
+			id: -Date.now(),
+			gameSessionId: currentRound.gameSessionId,
+			roundId: currentRound.id,
+			participantId: nextParticipantId,
+			turnOrder: currentRound.turns.length,
+			endedAt: null,
+			sipsAwardedTo: null,
+			rolls: [newRoll],
+			totalRollsUsed: 1,
+			finalScore: isSafe ? null : score,
+			isSafe,
+			specialRollType,
+			completedAt: new Date(),
+			isComplete: false,
+		};
+		return { ...currentRound, turns: [...currentRound.turns, newTurn] };
+	}
+
+	if (action.type === "endTurn") {
+		// Mark the active turn as complete
+		const updatedTurns = currentRound.turns.map((t) => {
+			if (!t.isComplete && t.totalRollsUsed > 0) {
+				return { ...t, isComplete: true, endedAt: new Date() };
+			}
+			return t;
+		});
+		return { ...currentRound, turns: updatedTurns };
+	}
+
+	return currentRound;
+}
+
 export function PlayerTurnCard({
+	gameSessionId,
 	round,
 	currentTurn,
 	participants,
 	currentParticipantId,
 }: PlayerTurnCardProps) {
-	const playerName = getNameById(currentParticipantId, participants);
-	const isRoundComplete = round.status === "completed";
+	const [isPending, startTransition] = useTransition();
+	const [optimisticRound, addOptimistic] = useOptimistic(round, applyOptimisticUpdate);
+
+	// Derive current state from the optimistic round
+	const oCurrentTurn = optimisticRound.turns.find((t) => !t.isComplete && t.totalRollsUsed > 0)
+		?? currentTurn;
+	const oCurrentParticipantId = optimisticRound.turns.find((t) => !t.isComplete)
+		? optimisticRound.turns.find((t) => !t.isComplete)!.participantId
+		: optimisticRound.playerOrder.find(
+			(pid) => !optimisticRound.turns.some((t) => t.participantId === pid && t.isComplete),
+		) ?? currentParticipantId;
+
+	const playerName = getNameById(oCurrentParticipantId, participants);
+	const isRoundComplete = optimisticRound.status === "completed";
 
 	// Current dice state — the latest roll's dice
 	const latestRoll =
-		currentTurn && currentTurn.rolls.length > 0
-			? currentTurn.rolls[currentTurn.rolls.length - 1]
+		oCurrentTurn && oCurrentTurn.rolls.length > 0
+			? oCurrentTurn.rolls[oCurrentTurn.rolls.length - 1]
 			: null;
-	const currentDice = latestRoll?.dice ?? [
+	const rawDice = latestRoll?.dice ?? [
 		{ value: 0, kept: false },
 		{ value: 0, kept: false },
 		{ value: 0, kept: false },
 	];
-	const rollCount = currentTurn?.totalRollsUsed ?? 0;
+	const rollCount = oCurrentTurn?.totalRollsUsed ?? 0;
 	const hasDice = latestRoll !== null;
-	const canReRoll = hasDice && rollCount < round.maxRollsAllowed;
+	const canReRoll = hasDice && rollCount < optimisticRound.maxRollsAllowed;
+	// Clear "kept" highlighting when re-rolling is no longer possible
+	// or when a special roll is showing (kept markers are irrelevant)
+	const isSafeResult = latestRoll ? isSafeRoll(latestRoll.specialRollType) : false;
+	const currentDice = canReRoll && !isSafeResult
+		? rawDice
+		: rawDice.map((d) => ({ ...d, kept: false }));
 	const isFirstRoll = !hasDice;
 	const specialLabel = latestRoll
 		? formatSpecialRoll(latestRoll.specialRollType)
 		: null;
 
 	// Compute the score to beat: lowest among completed, non-safe players
-	const completedNonSafe = round.turns.filter(
-		(t) => t.participantId !== currentParticipantId && !t.isSafe && t.finalScore !== null,
+	const completedNonSafe = optimisticRound.turns.filter(
+		(t) => t.participantId !== oCurrentParticipantId && !t.isSafe && t.finalScore !== null,
 	);
 	const scoreToBeat = completedNonSafe.length > 0
 		? Math.min(...completedNonSafe.map((t) => t.finalScore as number))
@@ -74,7 +187,7 @@ export function PlayerTurnCard({
 	const isSpecialRoll = isStairsRoll || latestRoll?.specialRollType === "three_of_a_kind";
 
 	// Stairs sips to award = player's position in round (1-indexed turnOrder)
-	const currentTurnOrder = currentTurn?.turnOrder ?? 0;
+	const currentTurnOrder = oCurrentTurn?.turnOrder ?? 0;
 	const stairsSipsToAward = isStairsRoll
 		? (latestRoll?.specialRollType === "super_stairs"
 			? (currentTurnOrder + 1) * 2
@@ -105,114 +218,239 @@ export function PlayerTurnCard({
 	const hasSelection = diceToReRoll > 0;
 
 	function handleOpenEnterDice() {
-		// For first roll, all 3 dice; otherwise only selected
 		setEnterDiceOpen(true);
 	}
 
-	function handleDiceEntered(_values: number[]) {
-		// TODO: Wire up to actual game action
-		// values contains the dice values the player rolled
-		// For now this is a placeholder
+	function handleDiceEntered(values: number[]) {
+		// Build the full dice array for the optimistic update
+		let optimisticDice: Dice;
+		const reRollIndices = isFirstRoll ? undefined : Array.from(selectedForReRoll);
+
+		if (isFirstRoll) {
+			optimisticDice = values.map((v) => ({ value: v, kept: false }));
+		} else {
+			// Merge kept dice with new values
+			let newIdx = 0;
+			optimisticDice = currentDice.map((die, idx) => {
+				if (selectedForReRoll.has(idx)) {
+					return { value: values[newIdx++], kept: false };
+				}
+				return { value: die.value, kept: true };
+			});
+		}
+
+		setSelectedForReRoll(new Set());
+
+		startTransition(async () => {
+			addOptimistic({ type: "roll", dice: optimisticDice });
+			await rollDiceAction({
+				gameSessionId,
+				diceValues: values,
+				reRollIndices,
+			});
+		});
 	}
 
-	function handleAwardSips(_targetParticipantId: number) {
-		// TODO: Wire up to actual game action
-		// targetParticipantId is the player who receives the sips
-		// For now this is a placeholder
+	function handleEndTurn() {
+		startTransition(async () => {
+			addOptimistic({ type: "endTurn" });
+			await endTurnAction({ gameSessionId });
+		});
+	}
+
+	function handleAwardSips(targetParticipantId: number) {
+		startTransition(async () => {
+			addOptimistic({ type: "endTurn" });
+			await endTurnAction({ gameSessionId, awardedToParticipantId: targetParticipantId });
+		});
+	}
+
+	function handleStartRound() {
+		startTransition(async () => {
+			await startRoundAction({ gameSessionId });
+		});
 	}
 
 	// Round complete summary
 	if (isRoundComplete) {
-		const loserName = round.losingParticipantId
-			? getNameById(round.losingParticipantId, participants)
+		const loserName = optimisticRound.losingParticipantId
+			? getNameById(optimisticRound.losingParticipantId, participants)
 			: null;
 
 		return (
 			<Card className="flex h-full w-full flex-col">
 				<CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
 					<CardTitle className="text-lg sm:text-xl">
-						Round {round.roundNumber} Complete
+						Round {optimisticRound.roundNumber} Complete
 					</CardTitle>
 				</CardHeader>
 				<Separator />
-				<CardContent className="flex flex-1 flex-col items-center gap-4 px-4 py-6 sm:px-6 sm:py-8">
-					{round.losingParticipantId && round.finalPenaltySips && (
-						<>
-							<div className="flex flex-col items-center gap-2 text-center">
-								<Beer className="size-10 text-destructive sm:size-12" />
-								<p className="text-lg font-semibold sm:text-xl">
-									{loserName} drinks!
-								</p>
-								<Badge
-									variant="destructive"
-									className="text-sm px-3 py-1"
-								>
-									{round.finalPenaltySips} sips
-								</Badge>
-							</div>
+			<CardContent className="flex flex-1 flex-col items-center gap-4 px-4 py-6 sm:px-6 sm:py-8">
+				{optimisticRound.allSafe ? (
+					/* ---- All Safe: no loser, penalty carries over ---- */
+					<>
+						<div className="flex flex-col items-center gap-2 text-center">
+							<ShieldCheck className="size-10 text-green-500 sm:size-12" />
+							<p className="text-lg font-semibold sm:text-xl">
+								Everyone is safe!
+							</p>
+							<p className="text-sm text-muted-foreground">
+								No loser this round — everyone rolls again
+							</p>
+							<Badge
+								variant="outline"
+								className="text-sm px-3 py-1 border-amber-500/50 text-amber-600 dark:text-amber-400"
+							>
+								{optimisticRound.currentPenaltySips} {optimisticRound.currentPenaltySips === 1 ? "sip" : "sips"} carry over
+							</Badge>
+						</div>
 
-							<Separator className="my-2" />
+						<Separator className="my-2" />
 
-							<div className="flex w-full flex-col gap-2">
-								<h4 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-									Final Scores
-								</h4>
-								{round.turns.map((t) => {
-									const name = getNameById(
-										t.participantId,
-										participants,
-									);
-									const isLoser =
-										t.participantId ===
-										round.losingParticipantId;
-									const special = formatSpecialRoll(
-										t.specialRollType,
-									);
-									return (
-										<div
-											key={t.id}
-											className={`flex items-center justify-between rounded-md border px-3 py-2 ${
-												isLoser
-													? "border-destructive/30 bg-destructive/5"
-													: ""
-											}`}
-										>
-											<div className="flex items-center gap-2">
-												<span
-													className={`text-sm font-medium ${isLoser ? "text-destructive" : ""}`}
-												>
-													{name}
-												</span>
-												{special && (
-													<Badge
-														variant="outline"
-														className="text-[10px] px-1.5 py-0"
-													>
-														{special}
-													</Badge>
-												)}
-											</div>
+						<div className="flex w-full flex-col gap-2">
+							<h4 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+								Results
+							</h4>
+							{optimisticRound.turns.map((t) => {
+								const name = getNameById(
+									t.participantId,
+									participants,
+								);
+								const special = formatSpecialRoll(
+									t.specialRollType,
+								);
+								return (
+									<div
+										key={t.id}
+										className="flex items-center justify-between rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2"
+									>
+										<span className="text-sm font-medium">
+											{name}
+										</span>
+										{special ? (
+											<Badge
+												variant="outline"
+												className="text-[10px] px-1.5 py-0"
+											>
+												{special}
+											</Badge>
+										) : (
 											<span className="text-sm font-semibold tabular-nums">
 												{t.finalScore ?? "—"}
 											</span>
-										</div>
-									);
-								})}
-							</div>
-						</>
-					)}
+										)}
+									</div>
+								);
+							})}
+						</div>
+					</>
+				) : optimisticRound.losingParticipantId && optimisticRound.finalPenaltySips ? (
+					/* ---- Normal round complete: someone lost ---- */
+					<>
+						<div className="flex flex-col items-center gap-2 text-center">
+							{optimisticRound.firstRollImmunity ? (
+								<>
+									<ShieldAlert className="size-10 text-amber-500 sm:size-12" />
+									<p className="text-sm text-muted-foreground">
+										Nobody likes a lucky first roller...
+									</p>
+									<p className="text-lg font-semibold sm:text-xl">
+										{loserName} takes the penalty!
+									</p>
+								</>
+							) : (
+								<>
+									<Beer className="size-10 text-destructive sm:size-12" />
+									<p className="text-lg font-semibold sm:text-xl">
+										{loserName} drinks!
+									</p>
+								</>
+							)}
+							<Badge
+								variant="destructive"
+								className="text-sm px-3 py-1"
+							>
+								{optimisticRound.finalPenaltySips} {optimisticRound.finalPenaltySips === 1 ? "sip" : "sips"}
+							</Badge>
+						</div>
+
+						<Separator className="my-2" />
+
+						<div className="flex w-full flex-col gap-2.5">
+							<h4 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+								Final Scores
+							</h4>
+							{optimisticRound.turns.map((t) => {
+								const name = getNameById(
+									t.participantId,
+									participants,
+								);
+								const isLoser =
+									t.participantId ===
+									optimisticRound.losingParticipantId;
+								const special = formatSpecialRoll(
+									t.specialRollType,
+								);
+								return (
+									<div
+										key={t.id}
+										className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
+											isLoser
+												? "border-destructive/30 bg-destructive/5"
+												: ""
+										}`}
+									>
+										<span
+											className={`text-base font-semibold ${isLoser ? "text-destructive" : ""}`}
+										>
+											{name}
+										</span>
+										{special ? (
+											<Badge
+												variant="outline"
+												className="text-xs px-2.5 py-0.5"
+											>
+												{special}
+											</Badge>
+										) : (
+											<span className="text-base font-bold tabular-nums">
+												{t.finalScore ?? "—"}
+											</span>
+										)}
+									</div>
+								);
+							})}
+						</div>
+					</>
+				) : null}
 				</CardContent>
 
 				<Separator />
 
 				<CardFooter className="mt-auto px-4 py-3 sm:px-6 sm:py-4">
-					<Button className="w-full">
-						<Play className="size-4" />
-						Start Round {round.roundNumber + 1}
-						{loserName && (
-							<span className="ml-1 text-xs opacity-75">
-								— {loserName} starts
-							</span>
+					<Button
+						className="w-full"
+						disabled={isPending}
+						onClick={handleStartRound}
+					>
+						{isPending ? (
+							<Loader2 className="size-4 animate-spin" />
+						) : (
+							<Play className="size-4" />
+						)}
+						{optimisticRound.allSafe ? (
+							<>
+								Continue — Everyone Rolls Again
+							</>
+						) : (
+							<>
+								Start Round {optimisticRound.roundNumber + 1}
+								{loserName && (
+									<span className="ml-1 text-xs opacity-75">
+										— {loserName} starts
+									</span>
+								)}
+							</>
 						)}
 					</Button>
 				</CardFooter>
@@ -229,7 +467,7 @@ export function PlayerTurnCard({
 							{playerName}&apos;s Turn
 						</CardTitle>
 						<Badge variant="outline" className="text-xs">
-							Roll {rollCount} / {round.maxRollsAllowed}
+							Roll {rollCount} / {optimisticRound.maxRollsAllowed}
 						</Badge>
 					</div>
 				</CardHeader>
@@ -333,6 +571,7 @@ export function PlayerTurnCard({
 			{isFirstRoll ? (
 				<Button
 					className="w-full"
+					disabled={isPending}
 					onClick={handleOpenEnterDice}
 				>
 					<Hand className="size-4" />
@@ -344,7 +583,7 @@ export function PlayerTurnCard({
 						<Button
 							variant={isStairsRoll ? "outline" : "default"}
 							className="w-full sm:flex-1"
-							disabled={!hasSelection}
+							disabled={!hasSelection || isPending}
 							onClick={handleOpenEnterDice}
 						>
 							<RotateCcw className="size-4" />
@@ -354,6 +593,7 @@ export function PlayerTurnCard({
 				{isStairsRoll ? (
 					<Button
 						className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 text-white"
+						disabled={isPending}
 						onClick={() => setAwardSipsOpen(true)}
 					>
 						<Footprints className="size-4" />
@@ -363,8 +603,14 @@ export function PlayerTurnCard({
 					<Button
 						variant={canReRoll ? "secondary" : "default"}
 						className="w-full sm:flex-1"
+						disabled={isPending}
+						onClick={handleEndTurn}
 					>
-						<Check className="size-4" />
+						{isPending ? (
+							<Loader2 className="size-4 animate-spin" />
+						) : (
+							<Check className="size-4" />
+						)}
 						End Turn
 					</Button>
 				)}
@@ -387,7 +633,7 @@ export function PlayerTurnCard({
 			onOpenChange={setAwardSipsOpen}
 			sipsToAward={stairsSipsToAward}
 			participants={participants}
-			currentParticipantId={currentParticipantId}
+			currentParticipantId={oCurrentParticipantId}
 			onConfirm={handleAwardSips}
 		/>
 	</>

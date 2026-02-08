@@ -32,13 +32,13 @@ export function ThemeToggle() {
 			variant="outline"
 			size="icon"
 			onClick={toggleTheme}
-			className="fixed right-4 bottom-4 z-50 size-10 rounded-full shadow-lg backdrop-blur-sm"
+			className="fixed right-4 bottom-4 z-50 size-8 rounded-full shadow-lg backdrop-blur supports-backdrop-filter:bg-background/80"
 			aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
 		>
 			{isDark ? (
-				<Sun className="size-5" />
+				<Sun className="size-3.5" />
 			) : (
-				<Moon className="size-5" />
+				<Moon className="size-3.5" />
 			)}
 		</Button>
 	);

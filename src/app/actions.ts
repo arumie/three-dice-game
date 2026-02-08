@@ -1,28 +1,137 @@
 "use server";
 
-import type { GameModel } from "@/lib/models";
+import { updateTag } from "next/cache";
 import {
-	FAKE_GAME_SESSION_ID,
-	getMockSession,
-} from "@/lib/mock/game-session";
+	completeGameSession,
+	createGameSession,
+	createGuestParticipant,
+} from "@/db/queries";
+import { createRound, endCurrentTurn, recordRoll } from "@/lib/game-service";
+import { gameSessionTag } from "@/lib/cache-tags";
 
 export async function createGameAction(data: {
 	name: string;
 	players: { name: string }[];
 	randomTurnOrder: boolean;
 }) {
-	// TODO: Replace with actual DB call
-	return { id: FAKE_GAME_SESSION_ID };
+	// 1. Create the game session
+	const session = await createGameSession({
+		ownerId: "local",
+		config: {
+			name: data.name,
+			randomTurnOrder: data.randomTurnOrder,
+		},
+	});
+
+	// 2. Create guest participants for each player
+	await Promise.all(
+		data.players.map((player) =>
+			createGuestParticipant(session.id, player.name),
+		),
+	);
+
+	// 3. Create the first round (first participant starts)
+	await createRound(session.id);
+
+	return { id: session.id };
 }
 
-export async function getGameSessionAction(
-	id: number,
-	mockKey?: string,
-): Promise<GameModel | null> {
-	// TODO: Replace with actual DB call
-	if (id === FAKE_GAME_SESSION_ID) {
-		return getMockSession(mockKey);
-	}
+/**
+ * Record a dice roll. The server determines the current turn/player.
+ * For first roll: pass 3 diceValues, omit reRollIndices.
+ * For re-roll: pass new values + indices of dice being re-rolled.
+ */
+export async function rollDiceAction(data: {
+	gameSessionId: number;
+	diceValues: number[];
+	reRollIndices?: number[];
+}) {
+	await recordRoll(data.gameSessionId, data.diceValues, data.reRollIndices);
+	updateTag(gameSessionTag(data.gameSessionId));
+}
 
-	return null;
+/**
+ * End the current player's turn (sets ended_at).
+ * Used for "End Turn" button and after "Award Sips" on stairs.
+ * Optionally records who received stairs/super-stairs sips.
+ */
+export async function endTurnAction(data: {
+	gameSessionId: number;
+	awardedToParticipantId?: number;
+}) {
+	await endCurrentTurn(data.gameSessionId, data.awardedToParticipantId);
+	updateTag(gameSessionTag(data.gameSessionId));
+}
+
+/**
+ * Start a new round. The server determines who starts (previous round's loser).
+ */
+export async function startRoundAction(data: {
+	gameSessionId: number;
+}) {
+	await createRound(data.gameSessionId);
+	updateTag(gameSessionTag(data.gameSessionId));
+}
+
+/**
+ * End the game session. Marks it as completed.
+ */
+export async function endGameAction(data: {
+	gameSessionId: number;
+}) {
+	await completeGameSession(data.gameSessionId);
+	updateTag(gameSessionTag(data.gameSessionId));
+}
+
+/**
+ * Invalidate the cached game session data, forcing a fresh DB fetch.
+ */
+export async function invalidateCacheAction(gameSessionId: number) {
+	updateTag(gameSessionTag(gameSessionId));
+}
+
+/**
+ * Fetch all raw DB rows related to a game session for debugging.
+ */
+export async function getRawGameDataAction(gameSessionId: number) {
+	const { db } = await import("@/db");
+	const {
+		gameSessionsTable,
+		gameParticipantsTable,
+		roundsTable,
+		playerTurnsTable,
+		rollsTable,
+	} = await import("@/db/schema");
+	const { eq } = await import("drizzle-orm");
+
+	const [session, participants, rounds, turns, rolls] = await Promise.all([
+		db
+			.select()
+			.from(gameSessionsTable)
+			.where(eq(gameSessionsTable.id, gameSessionId)),
+		db
+			.select()
+			.from(gameParticipantsTable)
+			.where(eq(gameParticipantsTable.gameSessionId, gameSessionId)),
+		db
+			.select()
+			.from(roundsTable)
+			.where(eq(roundsTable.gameSessionId, gameSessionId)),
+		db
+			.select()
+			.from(playerTurnsTable)
+			.where(eq(playerTurnsTable.gameSessionId, gameSessionId)),
+		db
+			.select()
+			.from(rollsTable)
+			.where(eq(rollsTable.gameSessionId, gameSessionId)),
+	]);
+
+	return {
+		game_sessions: session,
+		game_participants: participants,
+		rounds,
+		player_turns: turns,
+		rolls,
+	};
 }

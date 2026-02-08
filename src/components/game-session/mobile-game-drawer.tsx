@@ -19,6 +19,7 @@ interface MobileGameDrawerProps {
 	stats: ParticipantStats[];
 	currentRound: RoundModel;
 	currentParticipantId?: number;
+	gameSessionId: number;
 }
 
 export function MobileGameDrawer({
@@ -26,9 +27,10 @@ export function MobileGameDrawer({
 	stats,
 	currentRound,
 	currentParticipantId,
+	gameSessionId,
 }: MobileGameDrawerProps) {
 	return (
-		<div className="fixed bottom-20 left-0 right-0 z-40 flex justify-center gap-3 px-4 lg:hidden">
+		<div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center gap-3 border-t bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/80 lg:hidden">
 			{/* Game State Sheet */}
 			<Sheet>
 				<SheetTrigger asChild>
@@ -49,7 +51,7 @@ export function MobileGameDrawer({
 						</SheetDescription>
 					</SheetHeader>
 					<div className="px-4 pb-4">
-						<GameStateCard session={session} stats={stats} />
+						<GameStateCard session={session} stats={stats} gameSessionId={gameSessionId} />
 					</div>
 				</SheetContent>
 			</Sheet>

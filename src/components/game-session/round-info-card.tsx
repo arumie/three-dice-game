@@ -103,10 +103,10 @@ export function RoundInfoCard({
 
 	function getRowStyle(participantId: number, isCurrent: boolean, turnData: typeof round.turns[number] | undefined) {
 		if (isCurrent) return "border-primary/50 bg-primary/5";
-		if (!turnData || turnData.finalScore === null) return "border-border";
+		if (!turnData || !turnData.isComplete) return "border-border";
 		if (turnData.isSafe) return "border-green-500/50 bg-green-500/5";
 		if (losingParticipantIds.has(participantId)) return "border-red-500/50 bg-red-500/5";
-		if (turnData.finalScore > lowestScore!) return "border-green-500/50 bg-green-500/5";
+		if (turnData.finalScore !== null && turnData.finalScore > lowestScore!) return "border-green-500/50 bg-green-500/5";
 		return "border-border";
 	}
 
@@ -128,6 +128,13 @@ export function RoundInfoCard({
 		{/* Sips at stake — escalating severity */}
 		<SipsAtStake sips={round.currentPenaltySips} />
 
+		{/* Carry-over note */}
+		{(round.carryOverSips ?? 0) > 0 && (
+			<div className="mx-4 -mt-1 mb-1 text-center text-[11px] text-muted-foreground sm:mx-5">
+				Includes {round.carryOverSips} carry-over {round.carryOverSips === 1 ? "sip" : "sips"} from all-safe round
+			</div>
+		)}
+
 			<CardContent className="flex flex-col gap-3 px-4 py-3 sm:px-5 sm:py-4">
 				{/* Player order */}
 				<h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -140,7 +147,7 @@ export function RoundInfoCard({
 							(t) => t.participantId === participantId,
 						);
 						const isCurrent = round.status !== "completed" && participantId === currentParticipantId;
-						const isCompleted = turnData?.finalScore !== null && turnData?.finalScore !== undefined;
+						const isCompleted = turnData?.isComplete === true;
 						const specialLabel = turnData?.specialRollType
 							? formatSpecialRoll(turnData.specialRollType)
 							: null;
@@ -190,18 +197,18 @@ export function RoundInfoCard({
 								</div>
 
 								{/* Bottom row: dice (only if player has rolled) */}
-								{isCompleted && turnData.rolls.length > 0 && (
-									<div className="flex justify-end">
-										<DiceDisplay
-											dice={
-												turnData.rolls[
-													turnData.rolls.length - 1
-												].dice
-											}
-											size="sm"
-										/>
-									</div>
-								)}
+							{isCompleted && turnData.rolls.length > 0 && (
+								<div className="flex justify-end">
+									<DiceDisplay
+										dice={
+											turnData.rolls[
+												turnData.rolls.length - 1
+											].dice.map((d) => ({ ...d, kept: false }))
+										}
+										size="sm"
+									/>
+								</div>
+							)}
 							</div>
 						);
 					})}

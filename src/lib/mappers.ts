@@ -10,9 +10,8 @@ import {
 	calculateScore,
 	detectSpecialRoll,
 	findLoserFromTurns,
-	getMaxRollsFromFirstTurn,
+	getImmunityPenalty,
 	getStartingParticipant,
-	isRoundCompleteFromData,
 	isSafeRoll,
 } from "./game-utils";
 import type {
@@ -57,6 +56,7 @@ export function mapPlayerTurn(
 		isSafe,
 		specialRollType,
 		completedAt: lastRoll?.rolledAt || new Date(),
+		isComplete: false, // Default; overridden by mapRound with full context
 	};
 }
 
@@ -74,14 +74,76 @@ export function mapRound(
 		return mapPlayerTurn(turn, rolls);
 	});
 
-	const isComplete = isRoundCompleteFromData(round.playerOrder, turns.length);
+	// Determine maxRollsAllowed.
+	// If carry-over max rolls is set (from a previous all-safe round), use that.
+	// Otherwise compute from the first turn: while the first player is still
+	// rolling the max is 3; once they explicitly end or use all 3 rolls,
+	// their roll count becomes the max for everyone.
+	const hasCarryOver = (round.carryOverSips ?? 0) > 0;
+	const firstTurn = turnModels[0];
+	let maxRollsAllowed: number;
+
+	if (round.carryOverMaxRolls != null) {
+		maxRollsAllowed = round.carryOverMaxRolls;
+	} else {
+		const firstTurnDone =
+			firstTurn != null &&
+			(firstTurn.endedAt !== null ||
+				firstTurn.totalRollsUsed >= 3);
+		maxRollsAllowed =
+			firstTurn && firstTurnDone ? firstTurn.totalRollsUsed : 3;
+	}
+
+	// Set isComplete on each turn now that we know maxRollsAllowed.
+	// A turn is complete when explicitly ended (endedAt set).
+	for (const turn of turnModels) {
+		turn.isComplete = turn.endedAt !== null;
+	}
+
+	// First-player immunity: if the first player rolled an immunity roll
+	// (three_of_a_kind or stairs) on their very first roll, the round ends
+	// immediately and that player is the loser.
+	// Skipped when carry-over sips exist (the penalty pool is already loaded).
+	const firstTurnImmunity =
+		!hasCarryOver &&
+		firstTurn != null &&
+		firstTurn.isComplete &&
+		firstTurn.turnOrder === 0 &&
+		firstTurn.totalRollsUsed === 1 &&
+		(firstTurn.specialRollType === "three_of_a_kind" ||
+			firstTurn.specialRollType === "stairs");
+
+	if (firstTurnImmunity) {
+		const startingParticipantId = getStartingParticipant(round.playerOrder);
+		const immunityPenalty = getImmunityPenalty(firstTurn);
+		return {
+			...round,
+			turns: turnModels,
+			status: "completed",
+			startingParticipantId,
+			maxRollsAllowed,
+			currentPenaltySips: immunityPenalty,
+			finalPenaltySips: immunityPenalty,
+			losingParticipantId: firstTurn.participantId,
+			completedAt: firstTurn.completedAt,
+			firstRollImmunity: true,
+			allSafe: false,
+		};
+	}
+
+	// A round is complete when every player has a finished turn
+	const allTurnsExist = turnModels.length === round.playerOrder.length;
+	const allTurnsComplete = turnModels.every((t) => t.isComplete);
+	const isComplete = allTurnsExist && allTurnsComplete;
 	const status = isComplete ? "completed" : "in_progress";
-	const maxRollsAllowed =
-		turnModels.length > 0 ? getMaxRollsFromFirstTurn(turnModels[0].rolls) : 3;
-	const currentPenaltySips = calculatePenaltyFromTurns(turnModels);
+
+	// Penalty includes carry-over from previous all-safe round(s)
+	const carryOver = round.carryOverSips ?? 0;
+	const currentPenaltySips = carryOver + calculatePenaltyFromTurns(turnModels);
 	const losingParticipantId = isComplete
 		? findLoserFromTurns(turnModels)
 		: null;
+	const allSafe = isComplete && losingParticipantId === null;
 	const startingParticipantId = getStartingParticipant(round.playerOrder);
 
 	// Get completedAt from last turn's last roll
@@ -101,6 +163,8 @@ export function mapRound(
 		finalPenaltySips: isComplete ? currentPenaltySips : null,
 		losingParticipantId,
 		completedAt,
+		firstRollImmunity: false,
+		allSafe,
 	};
 }
 

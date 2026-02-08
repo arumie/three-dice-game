@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,10 +9,7 @@ interface DiceSpinnerProps {
 }
 
 export function DiceSpinner({ className, size = 24 }: DiceSpinnerProps) {
-	const DiceIcon = useMemo(
-		() => DICE_ICONS[Math.floor(Math.random() * DICE_ICONS.length)],
-		[],
-	);
+	const DiceIcon = DICE_ICONS[0];
 
 	return (
 		<div

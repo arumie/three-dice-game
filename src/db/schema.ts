@@ -74,6 +74,10 @@ export const roundsTable = pgTable(
 		roundNumber: integer("round_number").notNull(),
 		playerOrder: json("player_order").notNull().$type<number[]>(),
 		startedAt: timestamp("started_at").notNull().defaultNow(),
+		/** Accumulated penalty sips carried over from previous all-safe round(s). */
+		carryOverSips: integer("carry_over_sips").notNull().default(0),
+		/** If set, overrides the first-player-determines-max behavior (inherited from an all-safe round). */
+		carryOverMaxRolls: integer("carry_over_max_rolls"),
 	},
 	(t) => [
 		index("rounds_session_idx").on(t.gameSessionId),
@@ -94,6 +98,11 @@ export const playerTurnsTable = pgTable(
 			.notNull()
 			.references(() => gameParticipantsTable.id),
 		turnOrder: integer("turn_order").notNull(),
+		endedAt: timestamp("ended_at"),
+		/** Participant who received stairs/super-stairs sips (null if no sips awarded). */
+		sipsAwardedTo: integer("sips_awarded_to").references(
+			() => gameParticipantsTable.id,
+		),
 	},
 	(t) => [
 		index("player_turns_session_idx").on(t.gameSessionId),

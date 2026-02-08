@@ -85,13 +85,48 @@ export function computeParticipantStats(
 			roundsLost: 0,
 			sipsDrunk: 0,
 			sipsAwarded: 0,
+			sipsReceived: 0,
+			threeOfAKindCount: 0,
+			stairsCount: 0,
+			superStairsCount: 0,
+			shitStairsCount: 0,
 		});
 	}
 
 	for (const round of session.rounds) {
-		if (round.status !== "completed" || !round.losingParticipantId || !round.finalPenaltySips) {
-			continue;
+		if (round.status !== "completed") continue;
+
+		// Count special rolls, sips awarded, and sips received per turn
+		for (const turn of round.turns) {
+			const s = statsMap.get(turn.participantId);
+			if (!s) continue;
+
+			let sipsAmount = 0;
+			if (turn.specialRollType === "three_of_a_kind") {
+				s.threeOfAKindCount += 1;
+			} else if (turn.specialRollType === "stairs") {
+				s.stairsCount += 1;
+				sipsAmount = turn.turnOrder + 1;
+				s.sipsAwarded += sipsAmount;
+			} else if (turn.specialRollType === "super_stairs") {
+				s.superStairsCount += 1;
+				sipsAmount = (turn.turnOrder + 1) * 2;
+				s.sipsAwarded += sipsAmount;
+			} else if (turn.specialRollType === "shit_stairs") {
+				s.shitStairsCount += 1;
+			}
+
+			// Record sips received by the target (counts toward their total drunk)
+			if (turn.sipsAwardedTo != null && sipsAmount > 0) {
+				const target = statsMap.get(turn.sipsAwardedTo);
+				if (target) {
+					target.sipsReceived += sipsAmount;
+					target.sipsDrunk += sipsAmount;
+				}
+			}
 		}
+
+		if (!round.losingParticipantId || !round.finalPenaltySips) continue;
 
 		const loserStats = statsMap.get(round.losingParticipantId);
 		if (loserStats) {

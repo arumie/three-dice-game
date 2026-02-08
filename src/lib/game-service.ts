@@ -9,8 +9,10 @@ import {
 	type SelectRoll,
 } from "../db/schema";
 import {
+	createRoll as createRollQuery,
 	getGameParticipantsBySession,
 	getGameSessionById,
+	getLatestRoll as getLatestRollQuery,
 	getLatestRound as getLatestRoundQuery,
 	getMaxRoundNumber,
 	getParticipantsByPlayerId,
@@ -18,7 +20,7 @@ import {
 	getRollsByPlayerTurn,
 	getRoundsBySession,
 } from "../db/queries";
-import { createPlayerOrder, isSuperStairsValid } from "./game-utils";
+import { createPlayerOrder, detectSpecialRoll, isSuperStairsValid } from "./game-utils";
 import { mapGame, mapPlayerTurn, mapRound } from "./mappers";
 import type {
 	GameModel,
@@ -177,26 +179,49 @@ export async function getNextParticipantToPlay(
 }
 
 /**
- * Create a new round with player order based on game config
+ * Create a new round with player order based on game config.
+ * Determines the starting player from the previous round's loser.
+ * For the first round, the first participant starts.
  */
 export async function createRound(
 	gameSessionId: number,
-	startingParticipantId: number,
-	allParticipantIds: number[],
-	options: {
-		shuffleOrder?: boolean; // Override config setting
-	} = {},
 ): Promise<number> {
-	// Get game session config
-	const session = await getGameSessionById(gameSessionId);
+	// Fetch session config, participants, and latest round from DB
+	const [session, participants, latestRoundModel] = await Promise.all([
+		getGameSessionById(gameSessionId),
+		getGameParticipantsBySession(gameSessionId),
+		getLatestRound(gameSessionId),
+	]);
 
 	if (!session) {
 		throw new Error(`Game session ${gameSessionId} not found`);
 	}
 
-	// Use override or game config setting
-	const shuffleOrder =
-		options.shuffleOrder ?? session.config.randomTurnOrder;
+	const allParticipantIds = participants.map((p) => p.id);
+
+	// Detect if previous round was all-safe (completed, no loser)
+	const prevAllSafe =
+		latestRoundModel?.status === "completed" &&
+		latestRoundModel.allSafe;
+
+	// Determine who starts:
+	// - If previous round was all-safe: keep the same starting player
+	// - If previous round had a loser: the loser starts
+	// - Otherwise (first round): first participant
+	let startingParticipantId: number;
+	if (prevAllSafe) {
+		startingParticipantId = latestRoundModel.startingParticipantId;
+	} else if (
+		latestRoundModel?.status === "completed" &&
+		latestRoundModel.losingParticipantId
+	) {
+		startingParticipantId = latestRoundModel.losingParticipantId;
+	} else {
+		startingParticipantId = allParticipantIds[0];
+	}
+
+	// Use game config setting for shuffle
+	const shuffleOrder = session.config.randomTurnOrder;
 
 	// Get the next round number
 	const latestRoundNumber = await getMaxRoundNumber(gameSessionId);
@@ -208,16 +233,165 @@ export async function createRound(
 		shuffleOrder,
 	);
 
+	// Carry over penalty and max rolls from an all-safe round
+	const carryOverSips = prevAllSafe
+		? latestRoundModel.currentPenaltySips
+		: 0;
+	const carryOverMaxRolls = prevAllSafe
+		? latestRoundModel.maxRollsAllowed
+		: undefined;
+
 	const result = await db
 		.insert(roundsTable)
 		.values({
 			gameSessionId,
 			roundNumber: latestRoundNumber + 1,
 			playerOrder,
+			carryOverSips,
+			carryOverMaxRolls,
 		})
 		.returning({ id: roundsTable.id });
 
 	return result[0].id;
+}
+
+/**
+ * Record a dice roll for the current player in the latest round.
+ * If the player hasn't started their turn yet, creates the turn first.
+ *
+ * @param diceValues - The new dice values (3 for first roll, N for re-roll)
+ * @param reRollIndices - Indices (0-2) of dice being re-rolled (omit for first roll)
+ */
+export async function recordRoll(
+	gameSessionId: number,
+	diceValues: number[],
+	reRollIndices?: number[],
+): Promise<void> {
+	// Validate dice values
+	for (const v of diceValues) {
+		if (v < 1 || v > 6 || !Number.isInteger(v)) {
+			throw new Error(`Invalid dice value: ${v}`);
+		}
+	}
+
+	const round = await getLatestRound(gameSessionId);
+	if (!round || round.status === "completed") {
+		throw new Error("No active round found");
+	}
+
+	// Find or create the current turn
+	const activeTurn = round.turns.find(
+		(t) => !t.isComplete && t.totalRollsUsed > 0,
+	);
+
+	let turnId: number;
+	let dice: Dice;
+	let rollNumber: number;
+	let turnOrder = -1;
+
+	if (activeTurn) {
+		// --- Re-roll on existing turn ---
+		if (!reRollIndices || reRollIndices.length === 0) {
+			throw new Error("Re-roll requires at least one die selected");
+		}
+		if (diceValues.length !== reRollIndices.length) {
+			throw new Error("Dice values must match selected re-roll count");
+		}
+
+		const previousRoll = await getLatestRollQuery(activeTurn.id, gameSessionId);
+		if (!previousRoll) {
+			throw new Error("No previous roll found for this turn");
+		}
+
+		// Build new dice: keep old values, replace re-rolled positions
+		let newValueIdx = 0;
+		dice = previousRoll.dice.map((die, idx) => {
+			if (reRollIndices.includes(idx)) {
+				return { value: diceValues[newValueIdx++], kept: false };
+			}
+			return { value: die.value, kept: true };
+		});
+		rollNumber = previousRoll.rollNumber + 1;
+		turnId = activeTurn.id;
+	} else {
+		// --- First roll: determine next player and create turn ---
+		if (diceValues.length !== 3) {
+			throw new Error("First roll must have exactly 3 dice");
+		}
+
+		// Find the next participant who doesn't have a turn yet
+		const nextParticipantId = round.playerOrder.find(
+			(pid) => !round.turns.some((t) => t.participantId === pid),
+		);
+		if (nextParticipantId == null) {
+			throw new Error("All players have already taken their turn");
+		}
+
+		turnOrder = round.turns.length;
+		turnId = await createPlayerTurn(
+			gameSessionId,
+			round.id,
+			nextParticipantId,
+			turnOrder,
+		);
+		dice = diceValues.map((v) => ({ value: v, kept: false }));
+		rollNumber = 1;
+	}
+
+	await createRollQuery({
+		gameSessionId,
+		playerTurnId: turnId,
+		rollNumber,
+		dice,
+	});
+
+	// First-player immunity: if the first player's first roll is an immunity
+	// roll (three_of_a_kind or stairs), auto-end their turn so the round
+	// completes immediately. Skipped when carry-over sips exist (penalty
+	// pool is already loaded from a previous all-safe round).
+	const hasCarryOver = (round.carryOverSips ?? 0) > 0;
+	if (!hasCarryOver && !activeTurn && turnOrder === 0 && rollNumber === 1) {
+		const specialType = detectSpecialRoll(dice);
+		if (specialType === "three_of_a_kind" || specialType === "stairs") {
+			await db
+				.update(playerTurnsTable)
+				.set({ endedAt: new Date() })
+				.where(eq(playerTurnsTable.id, turnId));
+		}
+	}
+}
+
+/**
+ * End the current active turn in a game session.
+ * Finds the in-progress turn from the latest round and sets ended_at.
+ * Optionally records who received stairs/super-stairs sips.
+ */
+export async function endCurrentTurn(
+	gameSessionId: number,
+	awardedToParticipantId?: number,
+): Promise<void> {
+	const round = await getLatestRound(gameSessionId);
+	if (!round) {
+		throw new Error("No active round found");
+	}
+
+	// Find the turn that has rolls but hasn't been ended yet
+	const activeTurn = round.turns.find(
+		(t) => !t.isComplete && t.totalRollsUsed > 0,
+	);
+	if (!activeTurn) {
+		throw new Error("No active turn found to end");
+	}
+
+	await db
+		.update(playerTurnsTable)
+		.set({
+			endedAt: new Date(),
+			...(awardedToParticipantId != null && {
+				sipsAwardedTo: awardedToParticipantId,
+			}),
+		})
+		.where(eq(playerTurnsTable.id, activeTurn.id));
 }
 
 /**
@@ -274,6 +448,11 @@ export async function getParticipantStats(
 	let roundsLost = 0;
 	let sipsDrunk = 0;
 	let sipsAwarded = 0;
+	let sipsReceived = 0;
+	let threeOfAKindCount = 0;
+	let stairsCount = 0;
+	let superStairsCount = 0;
+	let shitStairsCount = 0;
 
 	for (const round of rounds) {
 		// Fetch turns for this round
@@ -301,22 +480,41 @@ export async function getParticipantStats(
 			roundsWon++;
 		}
 
-		// Check if this participant awarded sips (stairs/super stairs)
+		// Count special rolls and sips awarded for this participant
 		const participantTurn = roundModel.turns.find(
 			(t) => t.participantId === participantId,
 		);
-		if (
-			participantTurn?.specialRollType === "stairs" ||
-			participantTurn?.specialRollType === "super_stairs"
-		) {
-			const awardedSips =
-				participantTurn.turnOrder *
-				(participantTurn.specialRollType === "super_stairs" ? 2 : 1);
-			sipsAwarded += awardedSips;
+		if (participantTurn) {
+			if (participantTurn.specialRollType === "three_of_a_kind") {
+				threeOfAKindCount++;
+			} else if (participantTurn.specialRollType === "stairs") {
+				stairsCount++;
+				sipsAwarded += participantTurn.turnOrder + 1;
+			} else if (participantTurn.specialRollType === "super_stairs") {
+				superStairsCount++;
+				sipsAwarded += (participantTurn.turnOrder + 1) * 2;
+			} else if (participantTurn.specialRollType === "shit_stairs") {
+				shitStairsCount++;
+			}
+		}
+
+		// Count sips received (turns where this participant was the target)
+		// These also count toward total sipsDrunk
+		for (const turn of roundModel.turns) {
+			if (turn.sipsAwardedTo === participantId) {
+				let amount = 0;
+				if (turn.specialRollType === "stairs") {
+					amount = turn.turnOrder + 1;
+				} else if (turn.specialRollType === "super_stairs") {
+					amount = (turn.turnOrder + 1) * 2;
+				}
+				sipsReceived += amount;
+				sipsDrunk += amount;
+			}
 		}
 	}
 
-	return { participantId, roundsWon, roundsLost, sipsDrunk, sipsAwarded };
+	return { participantId, roundsWon, roundsLost, sipsDrunk, sipsAwarded, sipsReceived, threeOfAKindCount, stairsCount, superStairsCount, shitStairsCount };
 }
 
 /**

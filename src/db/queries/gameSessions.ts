@@ -127,8 +127,9 @@ export async function completeGameSession(
 export async function deleteGameSession(id: number): Promise<boolean> {
 	const result = await db
 		.delete(gameSessionsTable)
-		.where(eq(gameSessionsTable.id, id));
-	return result.rowCount > 0;
+		.where(eq(gameSessionsTable.id, id))
+		.returning({ id: gameSessionsTable.id });
+	return result.length > 0;
 }
 
 /**

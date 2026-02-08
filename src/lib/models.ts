@@ -25,6 +25,8 @@ export interface PlayerTurnModel extends SelectPlayerTurn {
 	isSafe: boolean;
 	specialRollType: SpecialRollType;
 	completedAt: Date;
+	/** True when the turn is done (endedAt set). Set by mapRound. */
+	isComplete: boolean;
 }
 
 /**
@@ -39,6 +41,10 @@ export interface RoundModel extends SelectRound {
 	finalPenaltySips: number | null;
 	losingParticipantId: number | null;
 	completedAt: Date | null;
+	/** True when the round ended because the first player rolled immunity on their first roll. */
+	firstRollImmunity: boolean;
+	/** True when the round completed but every player was safe (no loser). */
+	allSafe: boolean;
 }
 
 /**
@@ -60,6 +66,11 @@ export interface ParticipantStats {
 	roundsLost: number;
 	sipsDrunk: number;
 	sipsAwarded: number;
+	sipsReceived: number;
+	threeOfAKindCount: number;
+	stairsCount: number;
+	superStairsCount: number;
+	shitStairsCount: number;
 }
 
 /**

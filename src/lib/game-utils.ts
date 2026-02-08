@@ -66,6 +66,21 @@ export function getThreeOfAKindSips(diceValue: number): number {
 }
 
 /**
+ * Calculate the penalty when the first player rolls immunity on their first roll.
+ * Three of a kind: the standard three-of-a-kind sips.
+ * Stairs: turnOrder + 1 (always 1 for the first player).
+ */
+export function getImmunityPenalty(turn: PlayerTurnModel): number {
+	if (turn.specialRollType === "three_of_a_kind") {
+		return getThreeOfAKindSips(turn.rolls[0].dice[0].value);
+	}
+	if (turn.specialRollType === "stairs") {
+		return turn.turnOrder + 1;
+	}
+	return 0;
+}
+
+/**
  * Roll random dice (for initial rolls or re-rolls)
  */
 export function rollDice(count = 3): number[] {
@@ -187,21 +202,35 @@ export function shuffleArray<T>(array: T[]): T[] {
 }
 
 /**
- * Create player order for a round
- * Puts starting participant first, optionally shuffles the rest
+ * Create player order for a round.
+ * When not shuffled, rotates the original order so the starting participant
+ * is first and the rest follow in their original circular "table" order.
+ * e.g. [1,2,3,4] with starter 3 → [3,4,1,2]
  */
 export function createPlayerOrder(
 	startingParticipantId: number,
 	allParticipantIds: number[],
 	shuffleOrder: boolean,
 ): number[] {
-	// Move starting participant to the front
-	const remaining = allParticipantIds.filter(
-		(id) => id !== startingParticipantId,
-	);
+	if (shuffleOrder) {
+		const remaining = allParticipantIds.filter(
+			(id) => id !== startingParticipantId,
+		);
+		return [startingParticipantId, ...shuffleArray(remaining)];
+	}
 
-	// Optionally shuffle remaining players
-	const orderedRemaining = shuffleOrder ? shuffleArray(remaining) : remaining;
+	// Circular rotation: find starting index and rotate
+	const startIdx = allParticipantIds.indexOf(startingParticipantId);
+	if (startIdx === -1) {
+		// Fallback: put starter first, keep rest in order
+		const remaining = allParticipantIds.filter(
+			(id) => id !== startingParticipantId,
+		);
+		return [startingParticipantId, ...remaining];
+	}
 
-	return [startingParticipantId, ...orderedRemaining];
+	return [
+		...allParticipantIds.slice(startIdx),
+		...allParticipantIds.slice(0, startIdx),
+	];
 }

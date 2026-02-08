@@ -1,47 +1,47 @@
-import { notFound } from "next/navigation";
-import { getGameSessionAction } from "@/app/actions";
+import { notFound, redirect } from "next/navigation";
+import { getGameSession } from "@/lib/cached-queries";
 import { getCurrentRound, computeParticipantStats } from "@/lib/game-helpers";
 import { GameStateCard } from "@/components/game-session/game-state-card";
 import { RoundInfoCard } from "@/components/game-session/round-info-card";
 import { PlayerTurnCard } from "@/components/game-session/player-turn-card";
 import { MobileGameDrawer } from "@/components/game-session/mobile-game-drawer";
-import { DebugStatePicker } from "@/components/game-session/debug-state-picker";
+import { DebugPanel } from "@/components/game-session/debug-panel";
 
 interface GameSessionPageProps {
 	params: Promise<{ id: string }>;
-	searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export default async function GameSessionPage({
 	params,
-	searchParams,
 }: GameSessionPageProps) {
 	const { id } = await params;
-	const resolvedSearchParams = await searchParams;
-	const mockKey = typeof resolvedSearchParams.mock === "string"
-		? resolvedSearchParams.mock
-		: undefined;
+	const gameSessionId = Number(id);
 
-	const session = await getGameSessionAction(Number(id), mockKey);
+	const session = await getGameSession(gameSessionId);
 
 	if (!session) {
 		notFound();
 	}
 
+	// Redirect completed games to the summary page
+	if (session.status === "completed") {
+		redirect(`/game-session/${gameSessionId}/summary`);
+	}
+
 	const currentRound = getCurrentRound(session);
 	const stats = computeParticipantStats(session);
 
-	// Determine the current turn and active participant
+	// Determine the current turn and active participant using isComplete
 	const isRoundComplete = currentRound?.status === "completed";
 	const currentTurn =
-		currentRound?.turns.find((t) => t.finalScore === null) ?? null;
+		currentRound?.turns.find((t) => !t.isComplete) ?? null;
 	const currentParticipantId = isRoundComplete
 		? currentRound.playerOrder[0] // doesn't matter for display, round is done
 		: (currentTurn?.participantId ??
 			(currentRound
 				? currentRound.playerOrder.find(
 						(pid) => !currentRound.turns.some(
-							(t) => t.participantId === pid && t.finalScore !== null,
+							(t) => t.participantId === pid && t.isComplete,
 						),
 					) ?? currentRound.playerOrder[0]
 				: session.participants[0]?.id));
@@ -53,7 +53,6 @@ export default async function GameSessionPage({
 				<p className="text-muted-foreground">
 					Waiting for the game to start...
 				</p>
-				<DebugStatePicker gameId={Number(id)} />
 			</div>
 		);
 	}
@@ -62,7 +61,7 @@ export default async function GameSessionPage({
 		<div className="flex flex-1 flex-col gap-4 px-4 py-4 sm:px-6 sm:py-6 lg:py-8">
 			{/* Desktop: Game state card at top */}
 			<div className="hidden lg:block">
-				<GameStateCard session={session} stats={stats} />
+				<GameStateCard session={session} stats={stats} gameSessionId={gameSessionId} />
 			</div>
 
 			{/* Desktop: Two-column layout / Mobile: single column */}
@@ -79,6 +78,7 @@ export default async function GameSessionPage({
 				{/* Main play area — always visible */}
 				<div className="flex flex-1">
 					<PlayerTurnCard
+						gameSessionId={gameSessionId}
 						round={currentRound}
 						currentTurn={currentTurn}
 						participants={session.participants}
@@ -87,16 +87,17 @@ export default async function GameSessionPage({
 				</div>
 			</div>
 
-			{/* Mobile: floating sheet triggers */}
-			<MobileGameDrawer
-				session={session}
-				stats={stats}
-				currentRound={currentRound}
-				currentParticipantId={currentParticipantId}
-			/>
+		{/* Mobile: floating sheet triggers */}
+		<MobileGameDrawer
+			session={session}
+			stats={stats}
+			currentRound={currentRound}
+			currentParticipantId={currentParticipantId}
+			gameSessionId={gameSessionId}
+		/>
 
-			{/* Debug: state picker */}
-			<DebugStatePicker gameId={Number(id)} />
-		</div>
+		{/* Debug tools */}
+		<DebugPanel session={session} gameSessionId={gameSessionId} />
+	</div>
 	);
 }
