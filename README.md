@@ -1,6 +1,8 @@
 <p align="center">
-  <img src="public/logo.svg" alt="Three Dice Game" height="250">
+  <img src="public/logo.svg" alt="Three Dice Game logo" height="250">
 </p>
+
+<h1 align="center">Three Dice Game</h1>
 
 <p align="center">
   A web application built with Next.js to play the Three Dice Game -- a dice-based drinking game with special rolls and penalties.

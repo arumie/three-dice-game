@@ -1,13 +1,13 @@
-<svg viewBox="0 0 340 80" xmlns="http://www.w3.org/2000/svg">
-  <!-- Three dice logo -->
-  <g transform="translate(4, 10) scale(1.05)" fill="#171717" fill-rule="evenodd">
-    <!-- Die 1: 1 dot, tilted left -->
+<svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    path { fill: #c4581c; }
+    @media (prefers-color-scheme: dark) {
+      path { fill: #e0874e; }
+    }
+  </style>
+  <g transform="translate(1, 1)" fill-rule="evenodd">
     <path d="M8,5 H22 A3,3,0,0,1,25,8 V22 A3,3,0,0,1,22,25 H8 A3,3,0,0,1,5,22 V8 A3,3,0,0,1,8,5Z M13,15 A2,2,0,1,0,17,15 A2,2,0,1,0,13,15Z" transform="rotate(-10 15 15)"/>
-    <!-- Die 2: 2 dots, upright -->
     <path d="M21,18 H35 A3,3,0,0,1,38,21 V35 A3,3,0,0,1,35,38 H21 A3,3,0,0,1,18,35 V21 A3,3,0,0,1,21,18Z M31.2,23 A1.8,1.8,0,1,0,34.8,23 A1.8,1.8,0,1,0,31.2,23Z M21.2,33 A1.8,1.8,0,1,0,24.8,33 A1.8,1.8,0,1,0,21.2,33Z"/>
-    <!-- Die 3: 3 dots, tilted right -->
     <path d="M35,32 H49 A3,3,0,0,1,52,35 V49 A3,3,0,0,1,49,52 H35 A3,3,0,0,1,32,49 V35 A3,3,0,0,1,35,32Z M45.4,37 A1.6,1.6,0,1,0,48.6,37 A1.6,1.6,0,1,0,45.4,37Z M40.4,42 A1.6,1.6,0,1,0,43.6,42 A1.6,1.6,0,1,0,40.4,42Z M35.4,47 A1.6,1.6,0,1,0,38.6,47 A1.6,1.6,0,1,0,35.4,47Z" transform="rotate(8 42 42)"/>
   </g>
-  <!-- Title text -->
-  <text x="76" y="52" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="32" font-weight="700" fill="#171717" letter-spacing="-0.5">Three Dice Game</text>
 </svg>
