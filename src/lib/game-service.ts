@@ -250,7 +250,7 @@ export async function createRound(
 			carryOverSips,
 			carryOverMaxRolls,
 		})
-		.returning({ id: roundsTable.id });
+		.returning();
 
 	return result[0].id;
 }
@@ -599,7 +599,7 @@ export async function createPlayerTurn(
 			participantId,
 			turnOrder,
 		})
-		.returning({ id: playerTurnsTable.id });
+		.returning();
 
 	return result[0].id;
 }

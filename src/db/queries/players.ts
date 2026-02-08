@@ -75,7 +75,7 @@ export async function updatePlayer(
  * Delete a player
  */
 export async function deletePlayer(id: number): Promise<boolean> {
-	const result = await db.delete(playersTable).where(eq(playersTable.id, id)).returning({ id: playersTable.id });
+	const result = await db.delete(playersTable).where(eq(playersTable.id, id)).returning();
 	return result.length > 0;
 }
 
