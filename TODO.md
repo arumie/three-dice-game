@@ -9,3 +9,8 @@
 
 - Players can be added to a game session after it has started (not during a round, but between rounds)
 - Player registration with persistent profiles and player stats (games played, rounds won/lost, total sips, special rolls, etc.)
+
+## Bugs
+
+- Loading is slow on "end turn" button in game session
+- Infinite loading on home page after having started a game
