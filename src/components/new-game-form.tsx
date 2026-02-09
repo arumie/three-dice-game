@@ -116,8 +116,9 @@ export function NewGameForm({ requiresCreationPassword = false }: NewGameFormPro
 
 				router.push(`/game-session/${result.id}`);
 			} catch {
-				setIsLoading(false);
 				toast.error("Something went wrong. Please try again.");
+			} finally {
+				setIsLoading(false);
 			}
 		},
 		[router],
