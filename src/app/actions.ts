@@ -5,6 +5,7 @@ import {
 	completeGameSession,
 	createGameSession,
 	createGuestParticipant,
+	deleteGameSession,
 	getGameSessionById,
 } from "@/db/queries";
 import { createRound, endCurrentTurn, recordRoll } from "@/lib/game-service";
@@ -139,6 +140,23 @@ export async function endGameAction(data: {
 	await completeGameSession(data.gameSessionId);
 	updateTag(gameSessionTag(data.gameSessionId));
 	updateTag(ALL_GAMES_TAG);
+}
+
+/**
+ * Delete a game session after verifying the admin password.
+ */
+export async function deleteGameSessionAction(
+	gameSessionId: number,
+	adminPassword: string,
+): Promise<{ success: boolean; error?: string }> {
+	const expected = process.env.ADMIN_PASSWORD;
+	if (!expected || adminPassword !== expected) {
+		return { success: false, error: "Invalid admin password" };
+	}
+	await deleteGameSession(gameSessionId);
+	updateTag(gameSessionTag(gameSessionId));
+	updateTag(ALL_GAMES_TAG);
+	return { success: true };
 }
 
 /**

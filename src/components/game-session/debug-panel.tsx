@@ -1,9 +1,22 @@
 "use client";
 
 import { useTransition, useState } from "react";
-import { Bug, ClipboardCopy, Database, RefreshCw, Check, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Bug, ClipboardCopy, Database, RefreshCw, Check, ChevronRight, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { invalidateCacheAction, getRawGameDataAction } from "@/app/actions";
+import { Input } from "@/components/ui/input";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { invalidateCacheAction, getRawGameDataAction, deleteGameSessionAction } from "@/app/actions";
 import type { GameModel } from "@/lib/models";
 
 interface DebugPanelProps {
@@ -12,10 +25,14 @@ interface DebugPanelProps {
 }
 
 export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
+	const router = useRouter();
 	const [isPending, startTransition] = useTransition();
 	const [copiedState, setCopiedState] = useState(false);
 	const [copiedDb, setCopiedDb] = useState(false);
 	const [open, setOpen] = useState(false);
+	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [adminPassword, setAdminPassword] = useState("");
+	const [deleteError, setDeleteError] = useState<string | null>(null);
 
 	function handleCopyState() {
 		const json = JSON.stringify(session, null, 2);
@@ -38,6 +55,19 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
 	function handleInvalidateCache() {
 		startTransition(async () => {
 			await invalidateCacheAction(gameSessionId);
+		});
+	}
+
+	function handleDeleteSession() {
+		startTransition(async () => {
+			const result = await deleteGameSessionAction(gameSessionId, adminPassword);
+			if (result.success) {
+				setDeleteOpen(false);
+				toast.success("Game session deleted");
+				router.push("/");
+			} else {
+				setDeleteError(result.error ?? "Something went wrong");
+			}
 		});
 	}
 
@@ -88,18 +118,74 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
 						)}
 						{copiedDb ? "Copied" : "DB"}
 					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						className="h-7 gap-1.5 px-2 text-xs"
-						disabled={isPending}
-						onClick={handleInvalidateCache}
-					>
-						<RefreshCw className={`size-3 ${isPending ? "animate-spin" : ""}`} />
-						Cache
-					</Button>
+				<Button
+					variant="ghost"
+					size="sm"
+					className="h-7 gap-1.5 px-2 text-xs"
+					disabled={isPending}
+					onClick={handleInvalidateCache}
+				>
+					<RefreshCw className={`size-3 ${isPending ? "animate-spin" : ""}`} />
+					Cache
+				</Button>
+				<Button
+					variant="ghost"
+					size="sm"
+					className="h-7 gap-1.5 px-2 text-xs text-destructive hover:text-destructive"
+					disabled={isPending}
+					onClick={() => setDeleteOpen(true)}
+				>
+					<Trash2 className="size-3" />
+					Delete
+				</Button>
 				</div>
 			)}
+
+			<AlertDialog
+				open={deleteOpen}
+				onOpenChange={(v) => {
+					setDeleteOpen(v);
+					if (!v) {
+						setAdminPassword("");
+						setDeleteError(null);
+					}
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete game session</AlertDialogTitle>
+						<AlertDialogDescription>
+							This action is irreversible. Enter the admin password to confirm.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<Input
+						type="password"
+						placeholder="Admin password"
+						value={adminPassword}
+						onChange={(e) => {
+							setAdminPassword(e.target.value);
+							setDeleteError(null);
+						}}
+						autoComplete="off"
+					/>
+					{deleteError && (
+						<p className="text-sm text-destructive">{deleteError}</p>
+					)}
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							variant="destructive"
+							disabled={isPending || !adminPassword}
+							onClick={(e) => {
+								e.preventDefault();
+								handleDeleteSession();
+							}}
+						>
+							{isPending ? "Deleting…" : "Delete"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 }

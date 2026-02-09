@@ -128,7 +128,9 @@ export function PlayerTurnCard({
 	participants,
 	currentParticipantId,
 }: PlayerTurnCardProps) {
-	const [isPending, startTransition] = useTransition();
+	const [_, startTransition] = useTransition();
+	const [isEndingTurn, startEndTurnTransition] = useTransition();
+	const [isStartingRound, startStartingRoundTransition] = useTransition();
 	const [optimisticRound, addOptimistic] = useOptimistic(round, applyOptimisticUpdate);
 
 	// Derive current state from the optimistic round
@@ -258,7 +260,7 @@ export function PlayerTurnCard({
 	}
 
 	function handleEndTurn() {
-		startTransition(async () => {
+		startEndTurnTransition(async () => {
 			try {
 				addOptimistic({ type: "endTurn" });
 				await endTurnAction({ gameSessionId });
@@ -269,7 +271,7 @@ export function PlayerTurnCard({
 	}
 
 	function handleAwardSips(targetParticipantId: number) {
-		startTransition(async () => {
+		startEndTurnTransition(async () => {
 			try {
 				addOptimistic({ type: "endTurn" });
 				await endTurnAction({ gameSessionId, awardedToParticipantId: targetParticipantId });
@@ -280,7 +282,7 @@ export function PlayerTurnCard({
 	}
 
 	function handleStartRound() {
-		startTransition(async () => {
+		startStartingRoundTransition(async () => {
 			try {
 				await startRoundAction({ gameSessionId });
 			} catch {
@@ -498,10 +500,10 @@ export function PlayerTurnCard({
 				<CardFooter className="mt-auto px-4 py-3 sm:px-6 sm:py-4">
 					<Button
 						className="w-full"
-						disabled={isPending}
 						onClick={handleStartRound}
+						disabled={isStartingRound}
 					>
-						{isPending ? (
+						{isStartingRound ? (
 							<Loader2 className="size-4 animate-spin" />
 						) : (
 							<Play className="size-4" />
@@ -656,7 +658,6 @@ export function PlayerTurnCard({
 			{isFirstRoll ? (
 				<Button
 					className="w-full"
-					disabled={isPending}
 					onClick={handleOpenEnterDice}
 				>
 					<Hand className="size-4" />
@@ -668,7 +669,7 @@ export function PlayerTurnCard({
 						<Button
 							variant={isStairsRoll ? "outline" : "default"}
 							className="w-full sm:flex-1"
-							disabled={!hasSelection || isPending}
+							disabled={!hasSelection}
 							onClick={handleOpenEnterDice}
 						>
 							<RotateCcw className="size-4" />
@@ -678,20 +679,23 @@ export function PlayerTurnCard({
 				{isStairsRoll ? (
 					<Button
 						className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 text-white"
-						disabled={isPending}
 						onClick={() => setAwardSipsOpen(true)}
-					>
-						<Footprints className="size-4" />
+						disabled={isEndingTurn}
+					>{isEndingTurn ? (
+						<Loader2 className="size-4 animate-spin" />
+						) : (
+							<Footprints className="size-4" />
+						)}
 						Award {stairsSipsToAward} {stairsSipsToAward === 1 ? "Sip" : "Sips"}
 					</Button>
 				) : (
 					<Button
 						variant={canReRoll ? "secondary" : "default"}
 						className="w-full sm:flex-1"
-						disabled={isPending}
 						onClick={handleEndTurn}
+						disabled={isEndingTurn}
 					>
-						{isPending ? (
+						{isEndingTurn ? (
 							<Loader2 className="size-4 animate-spin" />
 						) : (
 							<Check className="size-4" />

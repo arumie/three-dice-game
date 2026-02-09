@@ -14,7 +14,6 @@ const PIP_POSITIONS: Record<number, [row: number, col: number][]> = {
 
 interface DieProps {
 	value: number;
-	kept?: boolean;
 	selected?: boolean;
 	size?: "sm" | "md" | "lg";
 	interactive?: boolean;
@@ -39,7 +38,7 @@ const gapClasses = {
 	lg: "gap-1 p-2.5",
 } as const;
 
-function Die({ value, kept, selected, size = "md", interactive, onClick }: DieProps) {
+function Die({ value, selected, size = "md", interactive, onClick }: DieProps) {
 	const pips = PIP_POSITIONS[value] ?? [];
 
 	return (
@@ -51,11 +50,9 @@ function Die({ value, kept, selected, size = "md", interactive, onClick }: DiePr
 				"relative grid grid-cols-3 grid-rows-3 rounded-lg border-2 transition-all",
 				sizeClasses[size],
 				gapClasses[size],
-				selected
-					? "border-primary bg-primary/10 shadow-sm shadow-primary/20 ring-2 ring-primary/30"
-					: kept
-						? "border-primary bg-primary/10 shadow-sm shadow-primary/20"
-						: "border-border bg-card",
+			selected
+				? "border-primary bg-primary/10 shadow-sm shadow-primary/20 ring-2 ring-primary/30"
+				: "border-border bg-card",
 				interactive && "cursor-pointer hover:border-primary/60 hover:bg-primary/5",
 				!interactive && "cursor-default",
 			)}
@@ -72,7 +69,7 @@ function Die({ value, kept, selected, size = "md", interactive, onClick }: DiePr
 								className={cn(
 									"rounded-full",
 									pipSizeClasses[size],
-									selected || kept ? "bg-primary" : "bg-foreground",
+									selected ? "bg-primary" : "bg-foreground",
 								)}
 							/>
 						)}
@@ -104,7 +101,6 @@ export function DiceDisplay({
 				<Die
 					key={idx}
 					value={die.value}
-					kept={die.kept}
 					selected={selectedIndices?.has(idx)}
 					size={size}
 					interactive={interactive}

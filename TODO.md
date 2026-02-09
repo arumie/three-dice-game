@@ -7,10 +7,11 @@
 
 ## Ideas
 
-- Players can be added to a game session after it has started (not during a round, but between rounds)
-- Player registration with persistent profiles and player stats (games played, rounds won/lost, total sips, special rolls, etc.)
+- [ ] Players can be added to a game session after it has started (not during a round, but between rounds)
+- [ ] Player registration with persistent profiles and player stats (games played, rounds won/lost, total sips, special rolls, etc.)
+- [x] A way to delete game sessions with an admin password (see debug panel + `deleteGameSessionAction`)
 
 ## Bugs
 
-- Loading is slow on "end turn" button in game session
-- Infinite loading on home page after having started a game
+- [ ] Loading is slow on "end turn" button in game session
+- [x] Infinite loading on home page after having started a game
