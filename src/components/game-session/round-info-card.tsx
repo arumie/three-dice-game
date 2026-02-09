@@ -216,22 +216,21 @@ export function RoundInfoCard({
 
 				{/* Round result (if completed) */}
 				{round.status === "completed" &&
-					round.losingParticipantId &&
+					round.losingParticipantIds.length > 0 &&
 					round.finalPenaltySips && (
 						<>
 							<Separator />
 							<div className="flex items-center justify-between rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm">
 								<span>
 									<span className="font-medium">
-										{getNameById(
-											round.losingParticipantId,
-											participants,
-										)}
+										{round.losingParticipantIds
+											.map((id) => getNameById(id, participants))
+											.join(" & ")}
 									</span>{" "}
 									lost this round
 								</span>
 								<Badge variant="destructive" className="text-xs">
-									{round.finalPenaltySips} sips
+									{round.finalPenaltySips} sips{round.losingParticipantIds.length > 1 ? " each" : ""}
 								</Badge>
 							</div>
 						</>

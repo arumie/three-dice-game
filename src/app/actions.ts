@@ -7,6 +7,7 @@ import {
 	createGuestParticipant,
 	deleteGameSession,
 	getGameSessionById,
+	reopenGameSession,
 } from "@/db/queries";
 import { createRound, endCurrentTurn, recordRoll } from "@/lib/game-service";
 import { gameSessionTag, ALL_GAMES_TAG } from "@/lib/cache-tags";
@@ -123,9 +124,10 @@ export async function endTurnAction(data: {
  */
 export async function startRoundAction(data: {
 	gameSessionId: number;
+	startingParticipantId?: number;
 }) {
 	await requireGameAuth(data.gameSessionId);
-	await createRound(data.gameSessionId);
+	await createRound(data.gameSessionId, data.startingParticipantId);
 	updateTag(gameSessionTag(data.gameSessionId));
 	updateTag(ALL_GAMES_TAG);
 }
@@ -154,6 +156,23 @@ export async function deleteGameSessionAction(
 		return { success: false, error: "Invalid admin password" };
 	}
 	await deleteGameSession(gameSessionId);
+	updateTag(gameSessionTag(gameSessionId));
+	updateTag(ALL_GAMES_TAG);
+	return { success: true };
+}
+
+/**
+ * Reopen a completed game session after verifying the admin password.
+ */
+export async function reopenGameSessionAction(
+	gameSessionId: number,
+	adminPassword: string,
+): Promise<{ success: boolean; error?: string }> {
+	const expected = process.env.ADMIN_PASSWORD;
+	if (!expected || adminPassword !== expected) {
+		return { success: false, error: "Invalid admin password" };
+	}
+	await reopenGameSession(gameSessionId);
 	updateTag(gameSessionTag(gameSessionId));
 	updateTag(ALL_GAMES_TAG);
 	return { success: true };

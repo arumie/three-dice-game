@@ -78,7 +78,7 @@ The following are **not stored**, but calculated on-demand:
 - `maxRollsAllowed` - First player's roll count
 - `currentPenaltySips` - Base + three-of-a-kind bonuses
 - `finalPenaltySips` - Final penalty when complete
-- `losingParticipantId` - Player with lowest score
+- `losingParticipantIds` - Players with lowest score (supports ties)
 - `completedAt` - Last turn's last roll timestamp
 - `startingParticipantId` - First in playerOrder
 
@@ -202,7 +202,7 @@ console.log(game.rounds[0].currentPenaltySips); // 8
 
 // Get current round
 const round = await getCurrentRound(gameSessionId);
-console.log(round?.losingParticipantId);
+console.log(round?.losingParticipantIds);
 
 // Create new round
 const roundId = await createRound(

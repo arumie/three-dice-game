@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X, Eye, EyeOff } from "lucide-react";
 import { ThreeDiceLogo } from "@/components/three-dice-logo";
@@ -83,6 +83,11 @@ export function NewGameForm({ requiresCreationPassword = false }: NewGameFormPro
 	const [showPassword, setShowPassword] = useState(false);
 	const [showCreationPassword, setShowCreationPassword] = useState(false);
 
+	// Reset loading state when returning to this page (e.g. browser back)
+	useEffect(() => {
+		setIsLoading(false);
+	}, []);
+
 	const form = useForm<NewGameFormValues>({
 		resolver: zodResolver(newGameSchema),
 		defaultValues: {
@@ -114,11 +119,11 @@ export function NewGameForm({ requiresCreationPassword = false }: NewGameFormPro
 					new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS)),
 				]);
 
+				// Keep loading state active — component will unmount on navigation
 				router.push(`/game-session/${result.id}`);
 			} catch {
-				toast.error("Something went wrong. Please try again.");
-			} finally {
 				setIsLoading(false);
+				toast.error("Something went wrong. Please try again.");
 			}
 		},
 		[router],

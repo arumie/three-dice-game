@@ -41,8 +41,8 @@ export function RoundBrowser({ rounds, participants }: RoundBrowserProps) {
 	const hasPrev = currentIndex > 0;
 	const hasNext = currentIndex < completedRounds.length - 1;
 
-	const loserName = round.losingParticipantId
-		? getNameById(round.losingParticipantId, participants)
+	const loserNames = round.losingParticipantIds.length > 0
+		? round.losingParticipantIds.map((id) => getNameById(id, participants)).join(" & ")
 		: null;
 
 	return (
@@ -88,9 +88,9 @@ export function RoundBrowser({ rounds, participants }: RoundBrowserProps) {
 				{round.falseStart && (
 					<div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
 						<ShieldAlert className="size-4 shrink-0 text-amber-500" />
-						<span className="text-muted-foreground">
-							False start — {loserName} took the penalty
-						</span>
+					<span className="text-muted-foreground">
+						False start — {loserNames} took the penalty
+					</span>
 					</div>
 				)}
 
@@ -101,8 +101,7 @@ export function RoundBrowser({ rounds, participants }: RoundBrowserProps) {
 						const turn = round.turns.find(
 							(t) => t.participantId === participantId,
 						);
-						const isLoser =
-							participantId === round.losingParticipantId;
+					const isLoser = round.losingParticipantIds.includes(participantId);
 						const special = turn
 							? formatSpecialRoll(turn.specialRollType)
 							: null;
@@ -169,26 +168,27 @@ export function RoundBrowser({ rounds, participants }: RoundBrowserProps) {
 							</Badge>
 						</div>
 					</>
-				) : round.losingParticipantId && round.finalPenaltySips ? (
-					<>
-						<Separator />
-						<div className="flex items-center justify-between rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm">
-							<span className="flex items-center gap-2">
-								<Beer className="size-4 text-destructive" />
-								<span>
-									<span className="font-medium">
-										{loserName}
-									</span>{" "}
-									lost this round
-								</span>
+			) : round.losingParticipantIds.length > 0 && round.finalPenaltySips ? (
+				<>
+					<Separator />
+					<div className="flex items-center justify-between rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm">
+						<span className="flex items-center gap-2">
+							<Beer className="size-4 text-destructive" />
+							<span>
+								<span className="font-medium">
+									{loserNames}
+								</span>{" "}
+								lost this round
 							</span>
-							<Badge variant="destructive" className="text-xs">
-								{round.finalPenaltySips}{" "}
-								{round.finalPenaltySips === 1 ? "sip" : "sips"}
-							</Badge>
-						</div>
-					</>
-				) : null}
+						</span>
+						<Badge variant="destructive" className="text-xs">
+							{round.finalPenaltySips}{" "}
+							{round.finalPenaltySips === 1 ? "sip" : "sips"}
+							{round.losingParticipantIds.length > 1 ? " each" : ""}
+						</Badge>
+					</div>
+				</>
+			) : null}
 
 				{/* Carry-over note */}
 				{(round.carryOverSips ?? 0) > 0 && !round.allSafe && (

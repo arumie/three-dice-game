@@ -185,6 +185,7 @@ export async function getNextParticipantToPlay(
  */
 export async function createRound(
 	gameSessionId: number,
+	overrideStartingParticipantId?: number,
 ): Promise<number> {
 	// Fetch session config, participants, and latest round from DB
 	const [session, participants, latestRoundModel] = await Promise.all([
@@ -205,17 +206,20 @@ export async function createRound(
 		latestRoundModel.allSafe;
 
 	// Determine who starts:
+	// - If an override is provided (e.g. tiebreaker winner): use that
 	// - If previous round was all-safe: keep the same starting player
-	// - If previous round had a loser: the loser starts
+	// - If previous round had a loser: the loser starts (first in array)
 	// - Otherwise (first round): first participant
 	let startingParticipantId: number;
-	if (prevAllSafe) {
+	if (overrideStartingParticipantId != null) {
+		startingParticipantId = overrideStartingParticipantId;
+	} else if (prevAllSafe) {
 		startingParticipantId = latestRoundModel.startingParticipantId;
 	} else if (
 		latestRoundModel?.status === "completed" &&
-		latestRoundModel.losingParticipantId
+		latestRoundModel.losingParticipantIds.length > 0
 	) {
-		startingParticipantId = latestRoundModel.losingParticipantId;
+		startingParticipantId = latestRoundModel.losingParticipantIds[0];
 	} else {
 		startingParticipantId = allParticipantIds[0];
 	}
@@ -455,9 +459,13 @@ export async function getParticipantStats(
 	let shitStairsCount = 0;
 	let lowestScoreCount = 0;
 	let lowestScoreSipsDrunk = 0;
+	let tiebreakerWins = 0;
 
 	// We need all participants for lowest-score sip tracking
 	const allParticipants = await getGameParticipantsBySession(gameSessionId);
+
+	// Collect mapped round models for tiebreaker detection
+	const roundModels: RoundModel[] = [];
 
 	for (const round of rounds) {
 		// Fetch turns for this round
@@ -475,6 +483,7 @@ export async function getParticipantStats(
 		});
 
 		const roundModel = mapRound(round, turns, rollsByTurnId);
+		roundModels.push(roundModel);
 
 		// Count lowest rolls from ALL rounds (including in-progress)
 		// since "everyone drinks 1 sip" triggers immediately on each roll
@@ -493,10 +502,10 @@ export async function getParticipantStats(
 		if (roundModel.status !== "completed") continue;
 
 		// Check if this participant lost
-		if (roundModel.losingParticipantId === participantId) {
+		if (roundModel.losingParticipantIds.includes(participantId)) {
 			roundsLost++;
 			sipsDrunk += roundModel.finalPenaltySips || 0;
-		} else if (roundModel.losingParticipantId) {
+		} else if (roundModel.losingParticipantIds.length > 0) {
 			roundsWon++;
 		}
 
@@ -534,7 +543,18 @@ export async function getParticipantStats(
 		}
 	}
 
-	return { participantId, roundsWon, roundsLost, sipsDrunk, sipsAwarded, sipsReceived, threeOfAKindCount, stairsCount, superStairsCount, shitStairsCount, lowestScoreCount, lowestScoreSipsDrunk };
+	// Count tiebreaker wins from consecutive round pairs
+	for (let i = 0; i < roundModels.length - 1; i++) {
+		const rm = roundModels[i];
+		const nextRm = roundModels[i + 1];
+		if (rm.status === "completed" && rm.losingParticipantIds.length > 1) {
+			if (nextRm.startingParticipantId === participantId) {
+				tiebreakerWins++;
+			}
+		}
+	}
+
+	return { participantId, roundsWon, roundsLost, sipsDrunk, sipsAwarded, sipsReceived, threeOfAKindCount, stairsCount, superStairsCount, shitStairsCount, lowestScoreCount, lowestScoreSipsDrunk, tiebreakerWins };
 }
 
 /**

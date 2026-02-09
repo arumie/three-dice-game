@@ -9,7 +9,7 @@ import {
 	calculatePenaltyFromTurns,
 	calculateScore,
 	detectSpecialRoll,
-	findLoserFromTurns,
+	findLosersFromTurns,
 	getFalseStartPenalty,
 	getStartingParticipant,
 	isSafeRoll,
@@ -124,7 +124,7 @@ export function mapRound(
 			maxRollsAllowed,
 			currentPenaltySips: falseStartPenalty,
 			finalPenaltySips: falseStartPenalty,
-			losingParticipantId: firstTurn.participantId,
+			losingParticipantIds: [firstTurn.participantId],
 			completedAt: firstTurn.completedAt,
 			falseStart: true,
 			allSafe: false,
@@ -140,10 +140,10 @@ export function mapRound(
 	// Penalty includes carry-over from previous all-safe round(s)
 	const carryOver = round.carryOverSips ?? 0;
 	const currentPenaltySips = carryOver + calculatePenaltyFromTurns(turnModels);
-	const losingParticipantId = isComplete
-		? findLoserFromTurns(turnModels)
-		: null;
-	const allSafe = isComplete && losingParticipantId === null;
+	const losingParticipantIds = isComplete
+		? findLosersFromTurns(turnModels)
+		: [];
+	const allSafe = isComplete && losingParticipantIds.length === 0;
 	const startingParticipantId = getStartingParticipant(round.playerOrder);
 
 	// Get completedAt from last turn's last roll
@@ -161,7 +161,7 @@ export function mapRound(
 		maxRollsAllowed,
 		currentPenaltySips,
 		finalPenaltySips: isComplete ? currentPenaltySips : null,
-		losingParticipantId,
+		losingParticipantIds,
 		completedAt,
 		falseStart: false,
 		allSafe,

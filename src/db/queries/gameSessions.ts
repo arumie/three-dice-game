@@ -122,6 +122,20 @@ export async function completeGameSession(
 }
 
 /**
+ * Reopen a completed game session by clearing completedAt
+ */
+export async function reopenGameSession(
+	id: number,
+): Promise<SelectGameSession | null> {
+	const [session] = await db
+		.update(gameSessionsTable)
+		.set({ completedAt: null })
+		.where(eq(gameSessionsTable.id, id))
+		.returning();
+	return session || null;
+}
+
+/**
  * Delete a game session (cascades to all related data)
  */
 export async function deleteGameSession(id: number): Promise<boolean> {

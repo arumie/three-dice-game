@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -16,6 +16,7 @@ import {
 	TrendingDown,
 	Home,
 } from "lucide-react";
+import { DiceLoading } from "@/components/dice-loading";
 import {
 	Card,
 	CardContent,
@@ -56,8 +57,14 @@ interface GameStateCardProps {
 
 export function GameStateCard({ session, stats, gameSessionId }: GameStateCardProps) {
 	const router = useRouter();
-	const [isPending, startTransition] = useTransition();
 	const [endGameOpen, setEndGameOpen] = useState(false);
+	const [isNavigating, setIsNavigating] = useState(false);
+
+	// Reset navigating state when returning to this page (e.g. browser back)
+	useEffect(() => {
+		setIsNavigating(false);
+		setEndGameOpen(false);
+	}, [gameSessionId]);
 
 	const completedRounds = session.rounds.filter(
 		(r) => r.status === "completed",
@@ -75,16 +82,21 @@ export function GameStateCard({ session, stats, gameSessionId }: GameStateCardPr
 	const leader = sortedStats[0];
 	const biggestDrinker = [...stats].sort((a, b) => b.sipsDrunk - a.sipsDrunk)[0];
 
-	function handleEndGame() {
-		setEndGameOpen(false);
-		startTransition(async () => {
-			try {
-				await endGameAction({ gameSessionId });
-				router.push(`/game-session/${gameSessionId}/summary`);
-			} catch {
-				toast.error("Something went wrong. Please try again.");
-			}
-		});
+	async function handleEndGame() {
+		setIsNavigating(true);
+		try {
+			// Show loading for at least 1 second before the action fires,
+			// because endGameAction revalidates the cache which triggers an
+			// immediate server-side redirect — without this delay the dialog
+			// would flash and disappear instantly.
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+			await endGameAction({ gameSessionId });
+			router.push(`/game-session/${gameSessionId}/summary`);
+		} catch {
+			setIsNavigating(false);
+			setEndGameOpen(false);
+			toast.error("Something went wrong. Please try again.");
+		}
 	}
 
 	return (
@@ -248,26 +260,36 @@ export function GameStateCard({ session, stats, gameSessionId }: GameStateCardPr
 			</Card>
 
 			{/* End game confirmation */}
-			<AlertDialog open={endGameOpen} onOpenChange={setEndGameOpen}>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>End Game Session?</AlertDialogTitle>
-						<AlertDialogDescription>
-							This will end the current game session for all players.
-							The current round will be abandoned. This action cannot be undone.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction
-							onClick={handleEndGame}
-							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-						>
-							End Game
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
+		<AlertDialog open={endGameOpen} onOpenChange={(v) => { if (!isNavigating) setEndGameOpen(v); }}>
+			<AlertDialogContent>
+				{isNavigating ? (
+					<DiceLoading message="Ending game..." cycleMessages={false} />
+				) : (
+					<>
+						<AlertDialogHeader>
+							<AlertDialogTitle>End Game Session?</AlertDialogTitle>
+							<AlertDialogDescription>
+								This will end the current game session for all players.
+								The current round will be abandoned. This action cannot be undone.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel>Cancel</AlertDialogCancel>
+							<AlertDialogAction
+								onClick={(e) => {
+									e.preventDefault();
+									handleEndGame();
+								}}
+								className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+							>
+								<LogOut className="size-4" />
+								End Game
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</>
+				)}
+			</AlertDialogContent>
+		</AlertDialog>
 		</>
 	);
 }

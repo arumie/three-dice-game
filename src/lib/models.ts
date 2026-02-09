@@ -39,7 +39,7 @@ export interface RoundModel extends SelectRound {
 	maxRollsAllowed: number;
 	currentPenaltySips: number;
 	finalPenaltySips: number | null;
-	losingParticipantId: number | null;
+	losingParticipantIds: number[];
 	completedAt: Date | null;
 	/** True when the round ended because the first player rolled a special on their first roll (false start). */
 	falseStart: boolean;
@@ -73,6 +73,7 @@ export interface ParticipantStats {
 	shitStairsCount: number;
 	lowestScoreCount: number;
 	lowestScoreSipsDrunk: number;
+	tiebreakerWins: number;
 }
 
 /**
@@ -104,5 +105,6 @@ export interface AggregatedPlayerStats {
 	shitStairsCount: number;
 	lowestScoreCount: number;
 	lowestScoreSipsDrunk: number;
+	tiebreakerWins: number;
 }
 

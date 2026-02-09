@@ -2,7 +2,7 @@
 
 import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bug, ClipboardCopy, Database, RefreshCw, Check, ChevronRight, Trash2 } from "lucide-react";
+import { Bug, ClipboardCopy, Database, RefreshCw, Check, ChevronRight, Trash2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { invalidateCacheAction, getRawGameDataAction, deleteGameSessionAction } from "@/app/actions";
+import { invalidateCacheAction, getRawGameDataAction, deleteGameSessionAction, reopenGameSessionAction } from "@/app/actions";
 import type { GameModel } from "@/lib/models";
 
 interface DebugPanelProps {
@@ -33,6 +33,10 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [adminPassword, setAdminPassword] = useState("");
 	const [deleteError, setDeleteError] = useState<string | null>(null);
+	const [reopenOpen, setReopenOpen] = useState(false);
+	const [reopenPassword, setReopenPassword] = useState("");
+	const [reopenError, setReopenError] = useState<string | null>(null);
+	const isCompleted = session.status === "completed";
 
 	function handleCopyState() {
 		const json = JSON.stringify(session, null, 2);
@@ -67,6 +71,19 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
 				router.push("/");
 			} else {
 				setDeleteError(result.error ?? "Something went wrong");
+			}
+		});
+	}
+
+	function handleReopenSession() {
+		startTransition(async () => {
+			const result = await reopenGameSessionAction(gameSessionId, reopenPassword);
+			if (result.success) {
+				setReopenOpen(false);
+				toast.success("Game session reopened");
+				router.push(`/game-session/${gameSessionId}`);
+			} else {
+				setReopenError(result.error ?? "Something went wrong");
 			}
 		});
 	}
@@ -128,17 +145,29 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
 					<RefreshCw className={`size-3 ${isPending ? "animate-spin" : ""}`} />
 					Cache
 				</Button>
+			<Button
+				variant="ghost"
+				size="sm"
+				className="h-7 gap-1.5 px-2 text-xs text-destructive hover:text-destructive"
+				disabled={isPending}
+				onClick={() => setDeleteOpen(true)}
+			>
+				<Trash2 className="size-3" />
+				Delete
+			</Button>
+			{isCompleted && (
 				<Button
 					variant="ghost"
 					size="sm"
-					className="h-7 gap-1.5 px-2 text-xs text-destructive hover:text-destructive"
+					className="h-7 gap-1.5 px-2 text-xs text-amber-600 hover:text-amber-600"
 					disabled={isPending}
-					onClick={() => setDeleteOpen(true)}
+					onClick={() => setReopenOpen(true)}
 				>
-					<Trash2 className="size-3" />
-					Delete
+					<RotateCcw className="size-3" />
+					Reopen
 				</Button>
-				</div>
+			)}
+			</div>
 			)}
 
 			<AlertDialog
@@ -185,7 +214,52 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
+		</AlertDialog>
+
+			<AlertDialog
+				open={reopenOpen}
+				onOpenChange={(v) => {
+					setReopenOpen(v);
+					if (!v) {
+						setReopenPassword("");
+						setReopenError(null);
+					}
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Reopen game session</AlertDialogTitle>
+						<AlertDialogDescription>
+							This will reopen the game session so players can continue playing. Enter the admin password to confirm.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<Input
+						type="password"
+						placeholder="Admin password"
+						value={reopenPassword}
+						onChange={(e) => {
+							setReopenPassword(e.target.value);
+							setReopenError(null);
+						}}
+						autoComplete="off"
+					/>
+					{reopenError && (
+						<p className="text-sm text-destructive">{reopenError}</p>
+					)}
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							disabled={isPending || !reopenPassword}
+							onClick={(e) => {
+								e.preventDefault();
+								handleReopenSession();
+							}}
+						>
+							{isPending ? "Reopening…" : "Reopen"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
 			</AlertDialog>
-		</div>
+	</div>
 	);
 }

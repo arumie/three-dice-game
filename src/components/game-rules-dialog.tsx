@@ -216,17 +216,30 @@ export function GameRulesDialog() {
 									</p>
 								</section>
 
-								{/* False start */}
-								<section>
-									<h3 className="mb-1.5 font-semibold">False Start</h3>
-									<p className="text-muted-foreground">
-										Got too lucky too soon? If the first player lands a special roll
-										on their very first throw, karma strikes instantly &mdash; the
-										round is over and <em>they</em> drink the penalty. No one else
-										even has to lift a finger.
-									</p>
-								</section>
-							</div>
+							{/* False start */}
+							<section>
+								<h3 className="mb-1.5 font-semibold">False Start</h3>
+								<p className="text-muted-foreground">
+									Got too lucky too soon? If the first player lands a special roll
+									on their very first throw, karma strikes instantly &mdash; the
+									round is over and <em>they</em> drink the penalty. No one else
+									even has to lift a finger.
+								</p>
+							</section>
+
+							{/* Tied loss */}
+							<section>
+								<h3 className="mb-1.5 font-semibold">Tied Loss</h3>
+								<p className="text-muted-foreground">
+									If two or more players end the round with the same lowest score
+									(and aren&apos;t safe), they{" "}
+									<strong className="text-foreground">all</strong> drink the full
+									penalty. Then a tiebreaker die roll decides who starts the next
+									round &mdash; each tied loser rolls a single die, highest roll
+									wins. Still tied? Re-roll until someone comes out on top.
+								</p>
+							</section>
+						</div>
 
 					<DialogFooter showCloseButton className="sticky -bottom-6 z-10 -mx-6 -mb-6 bg-background px-6 pb-6 pt-4 border-t border-border" />
 				</DialogContent>

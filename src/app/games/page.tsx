@@ -68,6 +68,7 @@ export default async function GamesPage() {
 				shitStairsCount: 0,
 				lowestScoreCount: 0,
 				lowestScoreSipsDrunk: 0,
+				tiebreakerWins: 0,
 			};
 			existing.gamesPlayed += 1;
 			if (winnerId != null && s.participantId === winnerId) {
@@ -84,6 +85,7 @@ export default async function GamesPage() {
 			existing.shitStairsCount += s.shitStairsCount;
 			existing.lowestScoreCount += s.lowestScoreCount;
 			existing.lowestScoreSipsDrunk += s.lowestScoreSipsDrunk;
+			existing.tiebreakerWins += s.tiebreakerWins;
 			playerStatsMap.set(name, existing);
 		}
 	}

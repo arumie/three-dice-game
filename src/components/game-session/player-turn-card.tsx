@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition, useOptimistic } from "react";
-import { Dices, RotateCcw, Check, Beer, Hand, Footprints, Play, Loader2, ShieldAlert, ShieldCheck, TrendingDown } from "lucide-react";
+import { useState, useEffect, useTransition, useOptimistic } from "react";
+import { Dices, RotateCcw, Check, Beer, Hand, Footprints, Play, Loader2, ShieldAlert, ShieldCheck, TrendingDown, Crown } from "lucide-react";
 import {
 	Card,
 	CardContent,
@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { DiceDisplay } from "./dice-display";
 import { EnterDiceDialog } from "./enter-dice-dialog";
 import { AwardSipsDialog } from "./award-sips-dialog";
+import { TiebreakerDialog } from "./tiebreaker-dialog";
 import type { PlayerTurnModel, RollModel, RoundModel } from "@/lib/models";
 import type { Dice, SelectGameParticipant } from "@/db/schema";
 import { formatSpecialRoll, getNameById } from "@/lib/game-helpers";
@@ -128,9 +129,7 @@ export function PlayerTurnCard({
 	participants,
 	currentParticipantId,
 }: PlayerTurnCardProps) {
-	const [_, startTransition] = useTransition();
-	const [isEndingTurn, startEndTurnTransition] = useTransition();
-	const [isStartingRound, startStartingRoundTransition] = useTransition();
+	const [isPending, startTransition] = useTransition();
 	const [optimisticRound, addOptimistic] = useOptimistic(round, applyOptimisticUpdate);
 
 	// Derive current state from the optimistic round
@@ -260,7 +259,7 @@ export function PlayerTurnCard({
 	}
 
 	function handleEndTurn() {
-		startEndTurnTransition(async () => {
+		startTransition(async () => {
 			try {
 				addOptimistic({ type: "endTurn" });
 				await endTurnAction({ gameSessionId });
@@ -271,7 +270,7 @@ export function PlayerTurnCard({
 	}
 
 	function handleAwardSips(targetParticipantId: number) {
-		startEndTurnTransition(async () => {
+		startTransition(async () => {
 			try {
 				addOptimistic({ type: "endTurn" });
 				await endTurnAction({ gameSessionId, awardedToParticipantId: targetParticipantId });
@@ -281,21 +280,46 @@ export function PlayerTurnCard({
 		});
 	}
 
-	function handleStartRound() {
-		startStartingRoundTransition(async () => {
+	function handleStartRound(startingParticipantId?: number) {
+		startTransition(async () => {
 			try {
-				await startRoundAction({ gameSessionId });
+				await startRoundAction({ gameSessionId, startingParticipantId });
 			} catch {
 				toast.error("Something went wrong. Please try again.");
 			}
 		});
 	}
 
+	// Tiebreaker state for tied losses — reset when the round changes
+	const [tiebreakerOpen, setTiebreakerOpen] = useState(false);
+	const [tiebreakerWinnerId, setTiebreakerWinnerId] = useState<number | null>(null);
+	useEffect(() => {
+		setTiebreakerWinnerId(null);
+		setTiebreakerOpen(false);
+	}, [round.id]);
+
 	// Round complete summary
 	if (isRoundComplete) {
-		const loserName = optimisticRound.losingParticipantId
-			? getNameById(optimisticRound.losingParticipantId, participants)
-			: null;
+		const loserIds = optimisticRound.losingParticipantIds;
+		const isTiedLoss = loserIds.length > 1;
+		const loserNames = loserIds.map((id) => getNameById(id, participants));
+
+		// Format loser names: "A and B" or "A, B, and C"
+		const loserNamesFormatted =
+			loserNames.length === 0
+				? null
+				: loserNames.length === 1
+					? loserNames[0]
+					: loserNames.length === 2
+						? `${loserNames[0]} and ${loserNames[1]}`
+						: `${loserNames.slice(0, -1).join(", ")}, and ${loserNames[loserNames.length - 1]}`;
+
+		// For the "starts next round" label
+		const starterName = isTiedLoss && tiebreakerWinnerId
+			? getNameById(tiebreakerWinnerId, participants)
+			: loserNames.length === 1
+				? loserNames[0]
+				: null;
 
 		// Count lowest rolls across all turns in this round
 		const lowestRolls: { participantId: number; count: number }[] = [];
@@ -307,7 +331,11 @@ export function PlayerTurnCard({
 		}
 		const totalLowestRolls = lowestRolls.reduce((sum, lr) => sum + lr.count, 0);
 
+		// Whether the tiebreaker needs to be completed before starting the next round
+		const needsTiebreaker = isTiedLoss && tiebreakerWinnerId === null;
+
 		return (
+			<>
 			<Card className="flex h-full w-full flex-col">
 				<CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
 					<CardTitle className="text-lg sm:text-xl">
@@ -394,7 +422,7 @@ export function PlayerTurnCard({
 							})}
 						</div>
 					</>
-				) : optimisticRound.losingParticipantId && optimisticRound.finalPenaltySips ? (
+				) : loserIds.length > 0 && optimisticRound.finalPenaltySips ? (
 					/* ---- Normal round complete: someone lost ---- */
 					<>
 						<div className="flex flex-col items-center gap-2 text-center">
@@ -405,14 +433,24 @@ export function PlayerTurnCard({
 										Nobody likes a lucky first roller...
 									</p>
 									<p className="text-lg font-semibold sm:text-xl">
-										{loserName} takes the penalty!
+										{loserNamesFormatted} takes the penalty!
+									</p>
+								</>
+							) : isTiedLoss ? (
+								<>
+									<Beer className="size-10 text-destructive sm:size-12" />
+									<p className="text-sm text-muted-foreground">
+										It&apos;s a tie!
+									</p>
+									<p className="text-lg font-semibold sm:text-xl">
+										{loserNamesFormatted} both drink!
 									</p>
 								</>
 							) : (
 								<>
 									<Beer className="size-10 text-destructive sm:size-12" />
 									<p className="text-lg font-semibold sm:text-xl">
-										{loserName} drinks!
+										{loserNamesFormatted} drinks!
 									</p>
 								</>
 							)}
@@ -420,9 +458,22 @@ export function PlayerTurnCard({
 								variant="destructive"
 								className="text-sm px-3 py-1"
 							>
-								{optimisticRound.finalPenaltySips} {optimisticRound.finalPenaltySips === 1 ? "sip" : "sips"}
+								{optimisticRound.finalPenaltySips} {optimisticRound.finalPenaltySips === 1 ? "sip" : "sips"}{isTiedLoss ? " each" : ""}
 							</Badge>
 						</div>
+
+						{/* Tiebreaker winner banner */}
+						{isTiedLoss && tiebreakerWinnerId && (
+							<div className="flex w-full items-center gap-2 rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2 text-sm">
+								<Crown className="size-4 text-green-600 dark:text-green-400" />
+								<span className="text-muted-foreground">
+									<span className="font-semibold text-green-600 dark:text-green-400">
+										{getNameById(tiebreakerWinnerId, participants)}
+									</span>
+									{" won the tiebreaker and starts next round"}
+								</span>
+							</div>
+						)}
 
 						{/* Lowest roll banner */}
 						{totalLowestRolls > 0 && (
@@ -455,9 +506,7 @@ export function PlayerTurnCard({
 									t.participantId,
 									participants,
 								);
-								const isLoser =
-									t.participantId ===
-									optimisticRound.losingParticipantId;
+								const isLoser = loserIds.includes(t.participantId);
 								const special = formatSpecialRoll(
 									t.specialRollType,
 								);
@@ -497,34 +546,59 @@ export function PlayerTurnCard({
 
 				<Separator />
 
-				<CardFooter className="mt-auto px-4 py-3 sm:px-6 sm:py-4">
-					<Button
-						className="w-full"
-						onClick={handleStartRound}
-						disabled={isStartingRound}
-					>
-						{isStartingRound ? (
-							<Loader2 className="size-4 animate-spin" />
-						) : (
-							<Play className="size-4" />
-						)}
-						{optimisticRound.allSafe ? (
-							<>
-								Continue — Everyone Rolls Again
-							</>
-						) : (
-							<>
-								Start Round {optimisticRound.roundNumber + 1}
-								{loserName && (
-									<span className="ml-1 text-xs opacity-75">
-										— {loserName} starts
-									</span>
-								)}
-							</>
-						)}
-					</Button>
+				<CardFooter className="mt-auto flex flex-col gap-2 px-4 py-3 sm:px-6 sm:py-4">
+					{needsTiebreaker ? (
+						<Button
+							className="w-full"
+							onClick={() => setTiebreakerOpen(true)}
+						>
+							<Dices className="size-4" />
+							Tiebreaker Roll
+						</Button>
+					) : (
+						<Button
+							className="w-full"
+							onClick={() => handleStartRound(isTiedLoss ? tiebreakerWinnerId ?? undefined : undefined)}
+							disabled={isPending}
+						>
+							{isPending ? (
+								<Loader2 className="size-4 animate-spin" />
+							) : (
+								<Play className="size-4" />
+							)}
+							{optimisticRound.allSafe ? (
+								<>
+									Continue — Everyone Rolls Again
+								</>
+							) : (
+								<>
+									Start Round {optimisticRound.roundNumber + 1}
+									{starterName && (
+										<span className="ml-1 text-xs opacity-75">
+											— {starterName} starts
+										</span>
+									)}
+								</>
+							)}
+						</Button>
+					)}
 				</CardFooter>
 			</Card>
+
+			{/* Tiebreaker dialog for tied losses */}
+			{isTiedLoss && (
+				<TiebreakerDialog
+					open={tiebreakerOpen}
+					onOpenChange={setTiebreakerOpen}
+					tiedParticipantIds={loserIds}
+					participants={participants}
+					onConfirm={(winnerId) => {
+						setTiebreakerWinnerId(winnerId);
+						setTiebreakerOpen(false);
+					}}
+				/>
+			)}
+			</>
 		);
 	}
 
@@ -680,8 +754,8 @@ export function PlayerTurnCard({
 					<Button
 						className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 text-white"
 						onClick={() => setAwardSipsOpen(true)}
-						disabled={isEndingTurn}
-					>{isEndingTurn ? (
+						disabled={isPending}
+					>{isPending ? (
 						<Loader2 className="size-4 animate-spin" />
 						) : (
 							<Footprints className="size-4" />
@@ -693,9 +767,9 @@ export function PlayerTurnCard({
 						variant={canReRoll ? "secondary" : "default"}
 						className="w-full sm:flex-1"
 						onClick={handleEndTurn}
-						disabled={isEndingTurn}
+						disabled={isPending}
 					>
-						{isEndingTurn ? (
+						{isPending ? (
 							<Loader2 className="size-4 animate-spin" />
 						) : (
 							<Check className="size-4" />

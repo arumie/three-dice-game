@@ -173,27 +173,26 @@ export function calculatePenaltyFromTurns(
 }
 
 /**
- * Find the losing participant from turns
- * Returns null if all players are safe
+ * Find the losing participants from turns.
+ * Returns all participant IDs tied for the lowest score.
+ * Returns an empty array if all players are safe.
  */
-export function findLoserFromTurns(
+export function findLosersFromTurns(
 	turns: PlayerTurnModel[],
-): number | null {
-	// Filter out safe players (those with special rolls)
+): number[] {
 	const unsafeTurns = turns.filter((t) => !t.isSafe);
 
 	if (unsafeTurns.length === 0) {
-		return null; // All players are safe
+		return [];
 	}
 
-	// Find the turn with the lowest score
-	const losingTurn = unsafeTurns.reduce((lowest, current) => {
-		const lowestScore = lowest.finalScore ?? Number.POSITIVE_INFINITY;
-		const currentScore = current.finalScore ?? Number.POSITIVE_INFINITY;
-		return currentScore < lowestScore ? current : lowest;
-	});
+	const minScore = Math.min(
+		...unsafeTurns.map((t) => t.finalScore ?? Number.POSITIVE_INFINITY),
+	);
 
-	return losingTurn.participantId;
+	return unsafeTurns
+		.filter((t) => (t.finalScore ?? Number.POSITIVE_INFINITY) === minScore)
+		.map((t) => t.participantId);
 }
 
 /**

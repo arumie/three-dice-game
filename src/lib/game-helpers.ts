@@ -94,6 +94,7 @@ export function computeParticipantStats(
 			shitStairsCount: 0,
 			lowestScoreCount: 0,
 			lowestScoreSipsDrunk: 0,
+			tiebreakerWins: 0,
 		});
 	}
 
@@ -147,20 +148,34 @@ export function computeParticipantStats(
 			}
 		}
 
-		if (!round.losingParticipantId || !round.finalPenaltySips) continue;
+		if (round.losingParticipantIds.length === 0 || !round.finalPenaltySips) continue;
 
-		const loserStats = statsMap.get(round.losingParticipantId);
-		if (loserStats) {
-			loserStats.roundsLost += 1;
-			loserStats.sipsDrunk += round.finalPenaltySips;
+		// Each loser drinks the full penalty
+		for (const loserId of round.losingParticipantIds) {
+			const loserStats = statsMap.get(loserId);
+			if (loserStats) {
+				loserStats.roundsLost += 1;
+				loserStats.sipsDrunk += round.finalPenaltySips;
+			}
 		}
 
 		// Everyone else "won" the round
 		for (const p of session.participants) {
-			if (p.id !== round.losingParticipantId) {
+			if (!round.losingParticipantIds.includes(p.id)) {
 				const s = statsMap.get(p.id);
 				if (s) s.roundsWon += 1;
 			}
+		}
+	}
+
+	// Count tiebreaker wins from consecutive round pairs
+	for (let i = 0; i < session.rounds.length - 1; i++) {
+		const round = session.rounds[i];
+		const nextRound = session.rounds[i + 1];
+		if (round.status === "completed" && round.losingParticipantIds.length > 1) {
+			const winnerId = nextRound.startingParticipantId;
+			const s = statsMap.get(winnerId);
+			if (s) s.tiebreakerWins += 1;
 		}
 	}
 

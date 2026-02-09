@@ -130,6 +130,10 @@ Player D then has to drink 10 sips and get to start the next round.
 If the first roll of the round (the first roll of the starting player) is any of the "nice" special rolls (three of a kind, stairs, super stairs), the player has to drink the penalty themselves and the round starts over (nobody likes a cheater!)
 Example: If the starting player rolls (1, 1, 1) they have to drink 7 sips and the round starts over. If the starting player rolls (1, 2, 3) they have to drink 1 sip and the round starts over.
 
+#### Tied loss
+
+If two or more players end the round with the same lowest score (and none of them are safe), they **all** drink the full penalty. After the loss screen, a tiebreaker die roll determines who starts the next round: each tied loser rolls a single die, and the highest roll wins. If the tiebreaker is also tied, the tied players re-roll until someone wins.
+
 #### Gentlemen's rules
 
 There are some gentleman's rules that the players can choose to follow (it is frowned upon to break these rules!)

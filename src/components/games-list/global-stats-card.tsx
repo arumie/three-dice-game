@@ -81,6 +81,7 @@ export function GlobalStatsCard({ stats, playerStats }: GlobalStatsCardProps) {
 		buildAward(playerStats, "stairsCount", "Stairway Master", "One step at a time", Footprints, "text-blue-500"),
 		buildAward(playerStats, "shitStairsCount", "Shit Stairs King", "Face, meet palm", Toilet, "text-amber-800 dark:text-amber-600"),
 		buildAward(playerStats, "lowestScoreCount", "Bottom Roller", "Couldn't roll worse if you tried", TrendingDown, "text-amber-600 dark:text-amber-400"),
+		buildAward(playerStats, "tiebreakerWins", "Tiebreaker Champ", "Luck favours the bold", Crown, "text-green-500"),
 	].filter((a): a is AwardDef => a !== null);
 
 	return (

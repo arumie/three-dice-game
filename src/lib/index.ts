@@ -22,7 +22,7 @@ export {
 	isRoundCompleteFromData,
 	getMaxRollsFromFirstTurn,
 	calculatePenaltyFromTurns,
-	findLoserFromTurns,
+	findLosersFromTurns,
 	shuffleArray,
 	createPlayerOrder,
 } from "./game-utils";

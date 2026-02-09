@@ -137,6 +137,12 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 				? [{ label: "Bottom Roller", quip: "Couldn't roll worse if you tried", icon: TrendingDown, color: "text-amber-600 dark:text-amber-400", participantId: top.participantId, value: top.lowestScoreCount }]
 				: [];
 		})(),
+		...(() => {
+			const top = [...stats].sort((a, b) => b.tiebreakerWins - a.tiebreakerWins)[0];
+			return top.tiebreakerWins > 0
+				? [{ label: "Tiebreaker Champ", quip: "Luck favours the bold", icon: Crown, color: "text-green-500", participantId: top.participantId, value: top.tiebreakerWins }]
+				: [];
+		})(),
 	];
 
 	return (
