@@ -24,6 +24,7 @@ export {
 	findLosersFromTurns,
 	shuffleArray,
 	createPlayerOrder,
+	violatesGentlemanRule,
 } from "./game-utils";
 
 // Export mapper functions

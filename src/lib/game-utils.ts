@@ -194,6 +194,31 @@ export function shuffleArray<T>(array: T[]): T[] {
 }
 
 /**
+ * Check if ending the turn now would violate the gentleman rule.
+ *
+ * The rule states: the last player's final roll must be able to lose the round,
+ * unless they already have a safe special roll. If their current score is higher
+ * than the lowest score to beat and they still have re-rolls available, ending
+ * the turn breaks the gentleman rule.
+ */
+export function violatesGentlemanRule(params: {
+	isLastPlayer: boolean;
+	isSafe: boolean;
+	hasRollsRemaining: boolean;
+	currentScore: number | null;
+	lowestScoreToBeat: number | null;
+}): boolean {
+	return (
+		params.isLastPlayer &&
+		!params.isSafe &&
+		params.hasRollsRemaining &&
+		params.lowestScoreToBeat !== null &&
+		params.currentScore !== null &&
+		params.currentScore > params.lowestScoreToBeat
+	);
+}
+
+/**
  * Create player order for a round.
  * When not shuffled, rotates the original order so the starting participant
  * is first and the rest follow in their original circular "table" order.

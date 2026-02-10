@@ -16,16 +16,98 @@ import { DiceDisplay } from "./dice-display";
 import { EnterDiceDialog } from "./enter-dice-dialog";
 import { AwardSipsDialog } from "./award-sips-dialog";
 import { TiebreakerDialog } from "./tiebreaker-dialog";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogMedia,
+	AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import type { PlayerTurnModel, RollModel, RoundModel } from "@/lib/models";
 import type { Dice, SelectGameParticipant } from "@/db/schema";
 import { formatSpecialRoll, getNameById } from "@/lib/game-helpers";
-import { calculateScore, detectSpecialRoll, isSafeRoll } from "@/lib/game-utils";
+import { calculateScore, detectSpecialRoll, isSafeRoll, violatesGentlemanRule } from "@/lib/game-utils";
 import {
 	rollDiceAction,
 	endTurnAction,
 	startRoundAction,
 } from "@/app/actions";
 import { toast } from "sonner";
+
+// ─── Gentleman Rule Dialog ───────────────────────────────────────────────────
+
+const GENTLEMAN_RULE_MESSAGES = [
+	{
+		title: "Where's Your Honor?",
+		text: (score: number, scoreToBeat: number) =>
+			`You're sitting at ${score} points and only need to beat ${scoreToBeat}. You still have rolls left — you might get three ones! A true gentleman would risk it all.`,
+	},
+	{
+		title: "Have You No Shame?",
+		text: (score: number, scoreToBeat: number) =>
+			`${score} points against a measly ${scoreToBeat}? Come on, that's not even a contest. Roll again and give someone else a fighting chance!`,
+	},
+	{
+		title: "Coward's Way Out?",
+		text: (score: number, scoreToBeat: number) =>
+			`Ending at ${score} when the score to beat is just ${scoreToBeat}? That's playing it safe to the extreme. Where's the thrill? Roll those dice!`,
+	},
+	{
+		title: "Really?",
+		text: (score: number, scoreToBeat: number) =>
+			`You've got ${score} points, the lowest is ${scoreToBeat}, and you still have rolls to spare. Even your grandma would re-roll. Don't be that guy.`,
+	},
+];
+
+function GentlemanRuleDialog({
+	open,
+	onOpenChange,
+	currentScore,
+	scoreToBeat,
+	onEndTurn,
+}: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	currentScore: number;
+	scoreToBeat: number;
+	onEndTurn: () => void;
+}) {
+	const [messageIndex] = useState(() =>
+		Math.floor(Math.random() * GENTLEMAN_RULE_MESSAGES.length),
+	);
+	const message = GENTLEMAN_RULE_MESSAGES[messageIndex];
+
+	return (
+		<AlertDialog open={open} onOpenChange={onOpenChange}>
+			<AlertDialogContent size="sm">
+				<AlertDialogHeader>
+					<AlertDialogMedia className="border-amber-500/30 bg-amber-500/10">
+						<ShieldAlert className="text-amber-500" />
+					</AlertDialogMedia>
+					<AlertDialogTitle>{message.title}</AlertDialogTitle>
+					<AlertDialogDescription>
+						{message.text(currentScore, scoreToBeat)}
+					</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogAction
+						variant="destructive"
+						onClick={onEndTurn}
+					>
+						End Turn Anyway
+					</AlertDialogAction>
+					<AlertDialogCancel>I&apos;ll Roll Again</AlertDialogCancel>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
+	);
+}
+
+// ─── Player Turn Card ────────────────────────────────────────────────────────
 
 interface PlayerTurnCardProps {
 	gameSessionId: number;
@@ -206,12 +288,23 @@ export function PlayerTurnCard({
 			: currentTurnOrder + 1)
 		: 0;
 
+	// Gentleman rule: last player can't end turn if their score is too high to lose
+	const isLastPlayer = (oCurrentTurn?.turnOrder ?? -1) === optimisticRound.playerOrder.length - 1;
+	const isGentlemanRuleViolation = violatesGentlemanRule({
+		isLastPlayer,
+		isSafe: isSafeResult,
+		hasRollsRemaining: canReRoll,
+		currentScore: latestRoll?.score ?? null,
+		lowestScoreToBeat: scoreToBeat,
+	});
+
 	// Track which dice are selected for re-rolling (inverted: selected = will be re-rolled)
 	const [selectedForReRoll, setSelectedForReRoll] = useState<Set<number>>(
 		new Set(),
 	);
 	const [enterDiceOpen, setEnterDiceOpen] = useState(false);
 	const [awardSipsOpen, setAwardSipsOpen] = useState(false);
+	const [gentlemanRuleOpen, setGentlemanRuleOpen] = useState(false);
 
 	function toggleReRoll(index: number) {
 		if (!canReRoll) return;
@@ -772,12 +865,12 @@ export function PlayerTurnCard({
 						Award {stairsSipsToAward} {stairsSipsToAward === 1 ? "Sip" : "Sips"}
 					</Button>
 				) : (
-				<Button
-					variant={canReRoll ? "secondary" : "default"}
-					className="w-full h-12 sm:h-10 sm:flex-1"
-					onClick={handleEndTurn}
-					disabled={isPending}
-					>
+			<Button
+				variant={canReRoll ? "secondary" : "default"}
+				className="w-full h-12 sm:h-10 sm:flex-1"
+				onClick={isGentlemanRuleViolation ? () => setGentlemanRuleOpen(true) : handleEndTurn}
+				disabled={isPending}
+				>
 						{isPending ? (
 							<Loader2 className="size-4 animate-spin" />
 						) : (
@@ -807,6 +900,18 @@ export function PlayerTurnCard({
 			participants={participants}
 			currentParticipantId={oCurrentParticipantId}
 			onConfirm={handleAwardSips}
+		/>
+
+		{/* Gentleman rule confirmation dialog */}
+		<GentlemanRuleDialog
+			open={gentlemanRuleOpen}
+			onOpenChange={setGentlemanRuleOpen}
+			currentScore={latestRoll?.score ?? 0}
+			scoreToBeat={scoreToBeat ?? 0}
+			onEndTurn={() => {
+				setGentlemanRuleOpen(false);
+				handleEndTurn();
+			}}
 		/>
 	</>
 	);
