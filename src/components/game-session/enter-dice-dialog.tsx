@@ -36,7 +36,7 @@ function DieValuePicker({
 			<span className="text-xs font-medium text-muted-foreground">
 				{label}
 			</span>
-			<div className="grid grid-cols-3 gap-1.5">
+			<div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
 				{DICE_VALUES.map((v) => (
 					<button
 						key={v}

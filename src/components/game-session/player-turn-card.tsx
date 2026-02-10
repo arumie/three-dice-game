@@ -336,10 +336,10 @@ export function PlayerTurnCard({
 
 		return (
 			<>
-			<Card className="flex h-full w-full flex-col">
-				<CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
-					<CardTitle className="text-lg sm:text-xl">
-						Round {optimisticRound.roundNumber} Complete
+		<Card className="flex h-full flex-1 w-full flex-col">
+			<CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
+				<CardTitle className="text-lg sm:text-xl">
+					Round {optimisticRound.roundNumber} Complete
 					</CardTitle>
 				</CardHeader>
 				<Separator />
@@ -547,20 +547,20 @@ export function PlayerTurnCard({
 				<Separator />
 
 				<CardFooter className="mt-auto flex flex-col gap-2 px-4 py-3 sm:px-6 sm:py-4">
-					{needsTiebreaker ? (
-						<Button
-							className="w-full"
-							onClick={() => setTiebreakerOpen(true)}
-						>
-							<Dices className="size-4" />
-							Tiebreaker Roll
-						</Button>
-					) : (
-						<Button
-							className="w-full"
-							onClick={() => handleStartRound(isTiedLoss ? tiebreakerWinnerId ?? undefined : undefined)}
-							disabled={isPending}
-						>
+				{needsTiebreaker ? (
+					<Button
+						className="w-full h-12 sm:h-10"
+						onClick={() => setTiebreakerOpen(true)}
+					>
+						<Dices className="size-4" />
+						Tiebreaker Roll
+					</Button>
+				) : (
+					<Button
+						className="w-full h-12 sm:h-10"
+						onClick={() => handleStartRound(isTiedLoss ? tiebreakerWinnerId ?? undefined : undefined)}
+						disabled={isPending}
+					>
 							{isPending ? (
 								<Loader2 className="size-4 animate-spin" />
 							) : (
@@ -604,11 +604,11 @@ export function PlayerTurnCard({
 
 	return (
 		<>
-			<Card className="flex h-full w-full flex-col">
-				<CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
-					<div className="flex items-center justify-between gap-2">
-						<CardTitle className="text-lg sm:text-xl">
-							{playerName}&apos;s Turn
+		<Card className="flex h-full flex-1 w-full flex-col">
+			<CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
+				<div className="flex items-center justify-between gap-2">
+					<CardTitle className="text-lg sm:text-xl">
+						{playerName}&apos;s Turn
 						</CardTitle>
 						<Badge variant="outline" className="text-xs">
 							Roll {rollCount} / {optimisticRound.maxRollsAllowed}
@@ -729,32 +729,32 @@ export function PlayerTurnCard({
 
 		{/* Action buttons — pinned to bottom */}
 		<CardFooter className="mt-auto flex flex-col gap-2 px-4 py-3 sm:flex-row sm:px-6 sm:py-4">
-			{isFirstRoll ? (
-				<Button
-					className="w-full"
-					onClick={handleOpenEnterDice}
-				>
-					<Hand className="size-4" />
-					Enter First Roll
-				</Button>
+		{isFirstRoll ? (
+			<Button
+				className="w-full h-14 sm:h-10"
+				onClick={handleOpenEnterDice}
+			>
+				<Hand className="size-4" />
+				Enter First Roll
+			</Button>
 			) : (
 				<>
 					{canReRoll && (
-						<Button
-							variant={isStairsRoll ? "outline" : "default"}
-							className="w-full sm:flex-1"
-							disabled={!hasSelection}
-							onClick={handleOpenEnterDice}
-						>
+					<Button
+						variant={isStairsRoll ? "outline" : "default"}
+						className="w-full h-12 sm:h-10 sm:flex-1"
+						disabled={!hasSelection}
+						onClick={handleOpenEnterDice}
+					>
 							<RotateCcw className="size-4" />
 							Re-roll{hasSelection ? ` (${diceToReRoll})` : ""}
 						</Button>
 					)}
 				{isStairsRoll ? (
-					<Button
-						className="w-full sm:flex-1 bg-green-600 hover:bg-green-700 text-white"
-						onClick={() => setAwardSipsOpen(true)}
-						disabled={isPending}
+				<Button
+					className="w-full h-12 sm:h-10 sm:flex-1 bg-green-600 hover:bg-green-700 text-white"
+					onClick={() => setAwardSipsOpen(true)}
+					disabled={isPending}
 					>{isPending ? (
 						<Loader2 className="size-4 animate-spin" />
 						) : (
@@ -763,11 +763,11 @@ export function PlayerTurnCard({
 						Award {stairsSipsToAward} {stairsSipsToAward === 1 ? "Sip" : "Sips"}
 					</Button>
 				) : (
-					<Button
-						variant={canReRoll ? "secondary" : "default"}
-						className="w-full sm:flex-1"
-						onClick={handleEndTurn}
-						disabled={isPending}
+				<Button
+					variant={canReRoll ? "secondary" : "default"}
+					className="w-full h-12 sm:h-10 sm:flex-1"
+					onClick={handleEndTurn}
+					disabled={isPending}
 					>
 						{isPending ? (
 							<Loader2 className="size-4 animate-spin" />

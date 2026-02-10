@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import crypto from "crypto";
 import { getGameSessionById } from "@/db/queries/gameSessions";
+import type { SelectGameSession } from "@/db/schema";
 
 function hashPassword(password: string): string {
 	return crypto.createHash("sha256").update(password).digest("hex");
@@ -36,11 +37,20 @@ export async function setGameAuthCookie(
  * Throws if the cookie is missing, invalid, or the game has no password set.
  *
  * Games with an empty password (legacy/default) are treated as open — no auth required.
+ *
+ * Accepts an optional pre-fetched session to skip the DB lookup
+ * (useful when the caller already has the session from a parallel fetch).
  */
 export async function requireGameAuth(
 	gameSessionId: number,
+	preloadedSession?: SelectGameSession,
 ): Promise<void> {
-	const session = await getGameSessionById(gameSessionId);
+	let session: SelectGameSession | null;
+	if (preloadedSession) {
+		session = preloadedSession;
+	} else {
+		session = await getGameSessionById(gameSessionId);
+	}
 	if (!session) {
 		throw new Error("Game session not found");
 	}

@@ -9,7 +9,7 @@ import {
 	getGameSessionById,
 	reopenGameSession,
 } from "@/db/queries";
-import { createRound, endCurrentTurn, recordRoll } from "@/lib/game-service";
+import { createRound, endCurrentTurn, getLatestRound, recordRoll } from "@/lib/game-service";
 import { gameSessionTag, ALL_GAMES_TAG } from "@/lib/cache-tags";
 import {
 	requireGameAuth,
@@ -98,8 +98,13 @@ export async function rollDiceAction(data: {
 	diceValues: number[];
 	reRollIndices?: number[];
 }) {
-	await requireGameAuth(data.gameSessionId);
-	await recordRoll(data.gameSessionId, data.diceValues, data.reRollIndices);
+	// Fetch session (for auth) and latest round (for recordRoll) in parallel
+	const [session, round] = await Promise.all([
+		getGameSessionById(data.gameSessionId),
+		getLatestRound(data.gameSessionId),
+	]);
+	await requireGameAuth(data.gameSessionId, session!);
+	await recordRoll(data.gameSessionId, data.diceValues, data.reRollIndices, round!);
 	updateTag(gameSessionTag(data.gameSessionId));
 	updateTag(ALL_GAMES_TAG);
 }
@@ -113,8 +118,13 @@ export async function endTurnAction(data: {
 	gameSessionId: number;
 	awardedToParticipantId?: number;
 }) {
-	await requireGameAuth(data.gameSessionId);
-	await endCurrentTurn(data.gameSessionId, data.awardedToParticipantId);
+	// Fetch session (for auth) and latest round (for endCurrentTurn) in parallel
+	const [session, round] = await Promise.all([
+		getGameSessionById(data.gameSessionId),
+		getLatestRound(data.gameSessionId),
+	]);
+	await requireGameAuth(data.gameSessionId, session!);
+	await endCurrentTurn(data.gameSessionId, data.awardedToParticipantId, round!);
 	updateTag(gameSessionTag(data.gameSessionId));
 	updateTag(ALL_GAMES_TAG);
 }
@@ -126,7 +136,9 @@ export async function startRoundAction(data: {
 	gameSessionId: number;
 	startingParticipantId?: number;
 }) {
-	await requireGameAuth(data.gameSessionId);
+	// Fetch session for auth — createRound does its own parallel fetch internally
+	const session = await getGameSessionById(data.gameSessionId);
+	await requireGameAuth(data.gameSessionId, session!);
 	await createRound(data.gameSessionId, data.startingParticipantId);
 	updateTag(gameSessionTag(data.gameSessionId));
 	updateTag(ALL_GAMES_TAG);

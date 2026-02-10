@@ -1,7 +1,7 @@
 import process from "node:process";
-import { neon } from "@neondatabase/serverless";
-import { drizzle as drizzleNeon } from "drizzle-orm/neon-http";
-import type { NeonHttpDatabase } from "drizzle-orm/neon-http";
+import { Pool } from "@neondatabase/serverless";
+import { drizzle as drizzleNeon } from "drizzle-orm/neon-serverless";
+import type { NeonDatabase } from "drizzle-orm/neon-serverless";
 import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -11,13 +11,14 @@ const isLocal = process.env.USE_LOCAL_DB === "true";
 // biome-ignore lint/style/noNonNullAssertion: Url should be available
 const url = process.env.POSTGRES_URL!;
 
-type Database = NeonHttpDatabase | PostgresJsDatabase;
+type Database = NeonDatabase | PostgresJsDatabase;
 
 function createDb(): Database {
 	if (isLocal) {
 		return drizzlePg(postgres(url));
 	}
-	return drizzleNeon(neon(url));
+	const pool = new Pool({ connectionString: url });
+	return drizzleNeon(pool);
 }
 
 // Prevent connection pool exhaustion during Next.js hot reloading

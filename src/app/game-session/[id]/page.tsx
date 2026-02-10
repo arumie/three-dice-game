@@ -79,8 +79,8 @@ export default async function GameSessionPage({
 						/>
 					</div>
 
-					{/* Main play area — always visible */}
-					<div className="flex flex-1">
+				{/* Main play area — always visible */}
+				<div className="flex flex-1 flex-col">
 						<PlayerTurnCard
 							gameSessionId={gameSessionId}
 							round={currentRound}

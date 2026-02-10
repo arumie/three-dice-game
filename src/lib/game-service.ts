@@ -10,6 +10,7 @@ import {
 } from "../db/schema";
 import {
 	createRoll as createRollQuery,
+	getFullGameState,
 	getGameParticipantsBySession,
 	getGameSessionById,
 	getLatestRoll as getLatestRollQuery,
@@ -18,6 +19,7 @@ import {
 	getParticipantsByPlayerId,
 	getPlayerTurnsByRound,
 	getRollsByPlayerTurn,
+	getRollsBySession,
 	getRoundsBySession,
 } from "../db/queries";
 import { createPlayerOrder, detectSpecialRoll, isSuperStairsValid } from "./game-utils";
@@ -30,48 +32,45 @@ import type {
 } from "./models";
 
 /**
- * Get complete game state with all rounds, turns, and rolls
+ * Get complete game state with all rounds, turns, and rolls.
+ * Uses a single parallel batch of 5 queries via getFullGameState.
  */
 export async function getCompleteGame(
 	gameSessionId: number,
 ): Promise<GameModel | null> {
-	const session = await getGameSessionById(gameSessionId);
-	if (!session) return null;
+	const state = await getFullGameState(gameSessionId);
+	if (!state) return null;
 
-	// Fetch all related data
-	const [participants, rounds] = await Promise.all([
-		getGameParticipantsBySession(session.id),
-		getRoundsBySession(session.id),
-	]);
-
-	// Fetch all turns for all rounds
-	const turnsArrays = await Promise.all(
-		rounds.map((round) => getPlayerTurnsByRound(round.id, gameSessionId)),
-	);
-
-	// Build turnsByRoundId map
+	// Group turns by roundId
 	const turnsByRoundId = new Map<number, SelectPlayerTurn[]>();
-	rounds.forEach((round, index) => {
-		turnsByRoundId.set(round.id, turnsArrays[index]);
-	});
+	for (const turn of state.turns) {
+		const arr = turnsByRoundId.get(turn.roundId) ?? [];
+		arr.push(turn);
+		turnsByRoundId.set(turn.roundId, arr);
+	}
+	// Sort each group by turnOrder
+	for (const arr of turnsByRoundId.values()) {
+		arr.sort((a, b) => a.turnOrder - b.turnOrder);
+	}
 
-	// Fetch all rolls for all turns
-	const allTurns = turnsArrays.flat();
-	const rollsArrays = await Promise.all(
-		allTurns.map((turn) => getRollsByPlayerTurn(turn.id, gameSessionId)),
-	);
-
-	// Build rollsByTurnId map
+	// Group rolls by playerTurnId
 	const rollsByTurnId = new Map<number, SelectRoll[]>();
-	allTurns.forEach((turn, index) => {
-		rollsByTurnId.set(turn.id, rollsArrays[index]);
-	});
+	for (const roll of state.rolls) {
+		const arr = rollsByTurnId.get(roll.playerTurnId) ?? [];
+		arr.push(roll);
+		rollsByTurnId.set(roll.playerTurnId, arr);
+	}
+	// Sort each group by rollNumber
+	for (const arr of rollsByTurnId.values()) {
+		arr.sort((a, b) => a.rollNumber - b.rollNumber);
+	}
 
-	return mapGame(session, participants, rounds, turnsByRoundId, rollsByTurnId);
+	return mapGame(state.session, state.participants, state.rounds, turnsByRoundId, rollsByTurnId);
 }
 
 /**
- * Get the latest round for a game session (may be completed or in progress)
+ * Get the latest round for a game session (may be completed or in progress).
+ * Uses 2 stages: 1 round query, then turns + all session rolls in parallel.
  */
 export async function getLatestRound(
 	gameSessionId: number,
@@ -79,19 +78,24 @@ export async function getLatestRound(
 	const round = await getLatestRoundQuery(gameSessionId);
 	if (!round) return null;
 
-	// Fetch turns for this round
-	const turns = await getPlayerTurnsByRound(round.id, gameSessionId);
+	// Fetch turns and ALL session rolls in parallel (2 queries, 1 round-trip)
+	const [turns, allRolls] = await Promise.all([
+		getPlayerTurnsByRound(round.id, gameSessionId),
+		getRollsBySession(gameSessionId),
+	]);
 
-	// Fetch rolls for all turns
-	const rollsArrays = await Promise.all(
-		turns.map((turn) => getRollsByPlayerTurn(turn.id, gameSessionId)),
-	);
-
-	// Build rollsByTurnId map
+	// Build rollsByTurnId by filtering in memory
+	const turnIds = new Set(turns.map((t) => t.id));
 	const rollsByTurnId = new Map<number, SelectRoll[]>();
-	turns.forEach((turn, index) => {
-		rollsByTurnId.set(turn.id, rollsArrays[index]);
-	});
+	for (const roll of allRolls) {
+		if (!turnIds.has(roll.playerTurnId)) continue;
+		const arr = rollsByTurnId.get(roll.playerTurnId) ?? [];
+		arr.push(roll);
+		rollsByTurnId.set(roll.playerTurnId, arr);
+	}
+	for (const arr of rollsByTurnId.values()) {
+		arr.sort((a, b) => a.rollNumber - b.rollNumber);
+	}
 
 	return mapRound(round, turns, rollsByTurnId);
 }
@@ -270,6 +274,7 @@ export async function recordRoll(
 	gameSessionId: number,
 	diceValues: number[],
 	reRollIndices?: number[],
+	preloadedRound?: RoundModel,
 ): Promise<void> {
 	// Validate dice values
 	for (const v of diceValues) {
@@ -278,7 +283,7 @@ export async function recordRoll(
 		}
 	}
 
-	const round = await getLatestRound(gameSessionId);
+	const round = preloadedRound ?? await getLatestRound(gameSessionId);
 	if (!round || round.status === "completed") {
 		throw new Error("No active round found");
 	}
@@ -373,8 +378,9 @@ export async function recordRoll(
 export async function endCurrentTurn(
 	gameSessionId: number,
 	awardedToParticipantId?: number,
+	preloadedRound?: RoundModel,
 ): Promise<void> {
-	const round = await getLatestRound(gameSessionId);
+	const round = preloadedRound ?? await getLatestRound(gameSessionId);
 	if (!round) {
 		throw new Error("No active round found");
 	}
