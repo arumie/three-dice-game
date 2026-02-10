@@ -22,8 +22,8 @@ import {
 	getRollsBySession,
 	getRoundsBySession,
 } from "../db/queries";
-import { createPlayerOrder, detectSpecialRoll, isSuperStairsValid } from "./game-utils";
-import { mapGame, mapPlayerTurn, mapRound } from "./mappers";
+import { createPlayerOrder, detectSpecialRoll } from "./game-utils";
+import { mapGame, mapRound } from "./mappers";
 import type {
 	GameModel,
 	ParticipantStats,
@@ -402,47 +402,6 @@ export async function endCurrentTurn(
 			}),
 		})
 		.where(eq(playerTurnsTable.id, activeTurn.id));
-}
-
-/**
- * Check if the previous turn was a stairs roll
- * Used to validate super stairs
- */
-export async function wasPreviousTurnStairs(
-	roundId: number,
-	currentTurnOrder: number,
-	gameSessionId: number,
-): Promise<boolean> {
-	if (currentTurnOrder <= 1) return false; // No previous turn
-
-	const turns = await getPlayerTurnsByRound(roundId, gameSessionId);
-	const previousTurn = turns.find((t) => t.turnOrder === currentTurnOrder - 1);
-
-	if (!previousTurn) return false;
-
-	// Fetch rolls for previous turn
-	const rolls = await getRollsByPlayerTurn(previousTurn.id, gameSessionId);
-
-	// Map to domain model
-	const previousTurnModel = mapPlayerTurn(previousTurn, rolls);
-	return previousTurnModel.specialRollType === "stairs";
-}
-
-/**
- * Validate if a super stairs roll is legitimate
- */
-export async function validateSuperStairs(
-	roundId: number,
-	currentTurnOrder: number,
-	dice: Dice,
-	gameSessionId: number,
-): Promise<boolean> {
-	const previousWasStairs = await wasPreviousTurnStairs(
-		roundId,
-		currentTurnOrder,
-		gameSessionId,
-	);
-	return isSuperStairsValid(dice, previousWasStairs);
 }
 
 /**

@@ -120,20 +120,6 @@ export function getStartingParticipant(playerOrder: number[]): number {
 }
 
 /**
- * Check if the current turn's roll qualifies as "super stairs"
- * Must be [4,5,6] AND previous turn must have been normal stairs [1,2,3]
- */
-export function isSuperStairsValid(
-	currentDice: Dice,
-	previousTurnWasStairs: boolean,
-): boolean {
-	const values = currentDice.map((d) => d.value).sort((a, b) => a - b);
-	const isStairs456 = values[0] === 4 && values[1] === 5 && values[2] === 6;
-
-	return isStairs456 && previousTurnWasStairs;
-}
-
-/**
  * Calculate if round is complete based on data
  */
 export function isRoundCompleteFromData(

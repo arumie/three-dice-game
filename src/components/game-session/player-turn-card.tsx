@@ -46,7 +46,16 @@ function applyOptimisticUpdate(
 	if (action.type === "roll") {
 		const { dice } = action;
 		const score = calculateScore(dice);
-		const specialRollType = detectSpecialRoll(dice);
+		let specialRollType = detectSpecialRoll(dice);
+
+		// Downgrade super_stairs if the previous turn wasn't a normal stairs
+		if (specialRollType === "super_stairs") {
+			const completedTurns = currentRound.turns.filter((t) => t.isComplete);
+			const prevTurn = completedTurns[completedTurns.length - 1];
+			if (prevTurn?.specialRollType !== "stairs") {
+				specialRollType = "none";
+			}
+		}
 
 		const newRoll: RollModel = {
 			id: -Date.now(),

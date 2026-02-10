@@ -74,6 +74,26 @@ export function mapRound(
 		return mapPlayerTurn(turn, rolls);
 	});
 
+	// Post-process: downgrade invalid super stairs.
+	// A [4,5,6] roll is only "super_stairs" if the previous turn was "stairs".
+	// Otherwise it's a normal roll (score 69).
+	for (let i = 0; i < turnModels.length; i++) {
+		const turn = turnModels[i];
+		if (turn.specialRollType !== "super_stairs") continue;
+
+		const prevTurn = turnModels[i - 1];
+		if (prevTurn?.specialRollType === "stairs") continue; // valid super stairs
+
+		// Downgrade turn
+		const lastRoll = turn.rolls[turn.rolls.length - 1];
+		if (lastRoll) {
+			lastRoll.specialRollType = "none";
+		}
+		turn.specialRollType = "none";
+		turn.isSafe = false;
+		turn.finalScore = lastRoll?.score ?? 0;
+	}
+
 	// Determine maxRollsAllowed.
 	// If carry-over max rolls is set (from a previous all-safe round), use that.
 	// Otherwise compute from the first turn: while the first player is still

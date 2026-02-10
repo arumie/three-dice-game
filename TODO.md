@@ -18,10 +18,11 @@
 
 - [x] Loading is slow on "end turn" button in game session
 - [x] Infinite loading on home page after having started a game
-- [ ] Super stair doesnt check for previous stairs
+- [x] Super stair doesnt check for previous stairs
 
 
 ## Refactorings
 
 - [ ] Refactor the components for player-turn-card, game-state-card, round-info-card, to be more composable and reusable
 - [ ] Encrypt/decrypt the password in the database for game sessions
+- [ ] Add unit tests for game session mapping functions to ensure they dont break.
