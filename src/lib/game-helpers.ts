@@ -48,6 +48,20 @@ export function formatSpecialRoll(type: string): string | null {
 }
 
 /**
+ * Format a list of names for display.
+ * Single name: "Alice"
+ * Two names: "Alice and Bob"
+ * Three+: "Alice, Bob, and Charlie"
+ * Empty: null
+ */
+export function formatNamesList(names: string[]): string | null {
+	if (names.length === 0) return null;
+	if (names.length === 1) return names[0];
+	if (names.length === 2) return `${names[0]} and ${names[1]}`;
+	return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
+/**
  * Get the status badge variant for a game/round status
  */
 export function getStatusVariant(

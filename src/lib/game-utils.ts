@@ -219,6 +219,67 @@ export function violatesGentlemanRule(params: {
 }
 
 /**
+ * Compute the score to beat: the lowest finalScore among non-safe turns,
+ * excluding a specific participant (typically the current player).
+ * Returns `null` when there are no qualifying turns.
+ */
+export function computeScoreToBeat(
+	turns: PlayerTurnModel[],
+	excludeParticipantId: number,
+): { score: number; participantId: number } | null {
+	const candidates = turns.filter(
+		(t) => t.participantId !== excludeParticipantId && !t.isSafe && t.finalScore !== null,
+	);
+
+	if (candidates.length === 0) return null;
+
+	let lowest = candidates[0];
+	for (const t of candidates) {
+		if ((t.finalScore as number) < (lowest.finalScore as number)) {
+			lowest = t;
+		}
+	}
+
+	return { score: lowest.finalScore as number, participantId: lowest.participantId };
+}
+
+/**
+ * Calculate how many sips a stairs roll can award.
+ * Normal stairs: turnOrder + 1.
+ * Super stairs: (turnOrder + 1) * 2.
+ * Non-stairs rolls: 0.
+ */
+export function computeStairsSipsToAward(
+	specialRollType: SpecialRollType,
+	turnOrder: number,
+): number {
+	if (specialRollType === "super_stairs") {
+		return (turnOrder + 1) * 2;
+	}
+	if (specialRollType === "stairs") {
+		return turnOrder + 1;
+	}
+	return 0;
+}
+
+/**
+ * Count how many "lowest" rolls each participant made across all turns.
+ * Returns only participants who had at least one lowest roll.
+ */
+export function computeLowestRollCounts(
+	turns: PlayerTurnModel[],
+): { participantId: number; count: number }[] {
+	const result: { participantId: number; count: number }[] = [];
+	for (const t of turns) {
+		const count = t.rolls.filter((r) => r.specialRollType === "lowest").length;
+		if (count > 0) {
+			result.push({ participantId: t.participantId, count });
+		}
+	}
+	return result;
+}
+
+/**
  * Create player order for a round.
  * When not shuffled, rotates the original order so the starting participant
  * is first and the rest follow in their original circular "table" order.

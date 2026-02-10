@@ -2,6 +2,9 @@ import { describe, expect, test } from "bun:test";
 import {
   calculatePenaltyFromTurns,
   calculateScore,
+  computeLowestRollCounts,
+  computeScoreToBeat,
+  computeStairsSipsToAward,
   createPlayerOrder,
   createRollWithKept,
   detectSpecialRoll,
@@ -670,5 +673,178 @@ describe("violatesGentlemanRule", () => {
       currentScore: calculateScore(dice([2, 3, 5])), // 10
       lowestScoreToBeat: calculateScore(dice([2, 4, 5])), // 11
     })).toBe(false);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// computeScoreToBeat
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("computeScoreToBeat", () => {
+  test("returns null when no non-safe turns exist", () => {
+    const turns = [
+      stubTurnModel({ participantId: 1, isSafe: true, finalScore: null }),
+      stubTurnModel({ participantId: 2, isSafe: true, finalScore: null }),
+    ];
+    expect(computeScoreToBeat(turns, 3)).toBeNull();
+  });
+
+  test("returns null when only the excluded participant has a score", () => {
+    const turns = [
+      stubTurnModel({ participantId: 1, finalScore: 50, isSafe: false }),
+    ];
+    expect(computeScoreToBeat(turns, 1)).toBeNull();
+  });
+
+  test("returns lowest score and participant among non-safe turns", () => {
+    const turns = [
+      stubTurnModel({ participantId: 1, finalScore: 100, isSafe: false }),
+      stubTurnModel({ participantId: 2, finalScore: 20, isSafe: false }),
+      stubTurnModel({ participantId: 3, finalScore: 50, isSafe: false }),
+    ];
+    const result = computeScoreToBeat(turns, 4);
+    expect(result).toEqual({ score: 20, participantId: 2 });
+  });
+
+  test("excludes current participant from candidates", () => {
+    const turns = [
+      stubTurnModel({ participantId: 1, finalScore: 10, isSafe: false }),
+      stubTurnModel({ participantId: 2, finalScore: 50, isSafe: false }),
+    ];
+    // Exclude participant 1 who has the lowest — should return participant 2
+    const result = computeScoreToBeat(turns, 1);
+    expect(result).toEqual({ score: 50, participantId: 2 });
+  });
+
+  test("ignores safe turns", () => {
+    const turns = [
+      stubTurnModel({ participantId: 1, finalScore: null, isSafe: true }),
+      stubTurnModel({ participantId: 2, finalScore: 80, isSafe: false }),
+    ];
+    const result = computeScoreToBeat(turns, 3);
+    expect(result).toEqual({ score: 80, participantId: 2 });
+  });
+
+  test("returns first lowest on tied scores", () => {
+    const turns = [
+      stubTurnModel({ participantId: 1, finalScore: 30, isSafe: false }),
+      stubTurnModel({ participantId: 2, finalScore: 30, isSafe: false }),
+    ];
+    const result = computeScoreToBeat(turns, 3);
+    expect(result?.score).toBe(30);
+    // Returns the first one found
+    expect(result?.participantId).toBe(1);
+  });
+
+  test("returns null when all turns have null finalScore", () => {
+    const turns = [
+      stubTurnModel({ participantId: 1, finalScore: null, isSafe: false }),
+    ];
+    expect(computeScoreToBeat(turns, 2)).toBeNull();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// computeStairsSipsToAward
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("computeStairsSipsToAward", () => {
+  test("stairs gives turnOrder + 1", () => {
+    expect(computeStairsSipsToAward("stairs", 0)).toBe(1);
+    expect(computeStairsSipsToAward("stairs", 1)).toBe(2);
+    expect(computeStairsSipsToAward("stairs", 3)).toBe(4);
+  });
+
+  test("super_stairs gives (turnOrder + 1) * 2", () => {
+    expect(computeStairsSipsToAward("super_stairs", 0)).toBe(2);
+    expect(computeStairsSipsToAward("super_stairs", 1)).toBe(4);
+    expect(computeStairsSipsToAward("super_stairs", 3)).toBe(8);
+  });
+
+  test("non-stairs rolls return 0", () => {
+    expect(computeStairsSipsToAward("none", 2)).toBe(0);
+    expect(computeStairsSipsToAward("three_of_a_kind", 1)).toBe(0);
+    expect(computeStairsSipsToAward("shit_stairs", 0)).toBe(0);
+    expect(computeStairsSipsToAward("lowest", 0)).toBe(0);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// computeLowestRollCounts
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("computeLowestRollCounts", () => {
+  test("returns empty array when no lowest rolls", () => {
+    const turns = [
+      stubTurnModel({
+        participantId: 1,
+        rolls: [stubRollModel([1, 4, 5])],
+      }),
+    ];
+    expect(computeLowestRollCounts(turns)).toEqual([]);
+  });
+
+  test("counts single lowest roll per participant", () => {
+    const turns = [
+      stubTurnModel({
+        participantId: 1,
+        rolls: [stubRollModel([2, 2, 3])], // lowest
+      }),
+      stubTurnModel({
+        participantId: 2,
+        rolls: [stubRollModel([1, 4, 5])], // normal
+      }),
+    ];
+    expect(computeLowestRollCounts(turns)).toEqual([
+      { participantId: 1, count: 1 },
+    ]);
+  });
+
+  test("counts multiple lowest rolls in one turn", () => {
+    const turns = [
+      stubTurnModel({
+        participantId: 1,
+        rolls: [
+          stubRollModel([2, 2, 3]), // lowest
+          stubRollModel([2, 2, 3]), // lowest again
+        ],
+      }),
+    ];
+    expect(computeLowestRollCounts(turns)).toEqual([
+      { participantId: 1, count: 2 },
+    ]);
+  });
+
+  test("counts lowest rolls across multiple participants", () => {
+    const turns = [
+      stubTurnModel({
+        participantId: 1,
+        rolls: [stubRollModel([2, 2, 3])], // lowest
+      }),
+      stubTurnModel({
+        participantId: 2,
+        rolls: [stubRollModel([2, 2, 3])], // lowest
+      }),
+    ];
+    expect(computeLowestRollCounts(turns)).toEqual([
+      { participantId: 1, count: 1 },
+      { participantId: 2, count: 1 },
+    ]);
+  });
+
+  test("skips participants with zero lowest rolls", () => {
+    const turns = [
+      stubTurnModel({
+        participantId: 1,
+        rolls: [stubRollModel([1, 2, 3])], // stairs, not lowest
+      }),
+      stubTurnModel({
+        participantId: 2,
+        rolls: [stubRollModel([2, 2, 3])], // lowest
+      }),
+    ];
+    const result = computeLowestRollCounts(turns);
+    expect(result).toHaveLength(1);
+    expect(result[0].participantId).toBe(2);
   });
 });

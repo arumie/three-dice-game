@@ -25,6 +25,9 @@ export {
 	shuffleArray,
 	createPlayerOrder,
 	violatesGentlemanRule,
+	computeScoreToBeat,
+	computeStairsSipsToAward,
+	computeLowestRollCounts,
 } from "./game-utils";
 
 // Export mapper functions
