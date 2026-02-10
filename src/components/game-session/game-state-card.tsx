@@ -11,6 +11,7 @@ import {
 	MoreVertical,
 	LogOut,
 	Crown,
+	Frown,
 	Skull,
 	Toilet,
 	TrendingDown,
@@ -78,8 +79,9 @@ export function GameStateCard({ session, stats, gameSessionId }: GameStateCardPr
 		return a.sipsDrunk - b.sipsDrunk;
 	});
 
-	// Find the leader and the biggest drinker
+	// Find the leader, the trailer, and the biggest drinker
 	const leader = sortedStats[0];
+	const trailer = sortedStats[sortedStats.length - 1];
 	const biggestDrinker = [...stats].sort((a, b) => b.sipsDrunk - a.sipsDrunk)[0];
 
 	async function handleEndGame() {
@@ -168,31 +170,41 @@ export function GameStateCard({ session, stats, gameSessionId }: GameStateCardPr
 								s.participantId,
 								session.participants,
 							);
-							const isLeader = s.participantId === leader?.participantId && s.roundsWon > 0;
-							const isMostDrunk = s.participantId === biggestDrinker?.participantId && s.sipsDrunk > 0;
+						const isLeader = s.participantId === leader?.participantId && s.roundsWon > 0;
+						const isTrailer =
+							s.participantId === trailer?.participantId &&
+							s.participantId !== leader?.participantId &&
+							sortedStats.length > 1;
+						const isMostDrunk = s.participantId === biggestDrinker?.participantId && s.sipsDrunk > 0;
 
 							return (
 								<div
 									key={s.participantId}
-									className={`flex items-center gap-4 rounded-xl border px-4 py-3 transition-colors ${
-										isLeader
-											? "border-yellow-500/30 bg-yellow-500/5"
+								className={`flex items-center gap-4 rounded-xl border px-4 py-3 transition-colors ${
+									isLeader
+										? "border-yellow-500/30 bg-yellow-500/5"
+										: isTrailer
+											? "border-purple-500/30 bg-purple-500/5"
 											: isMostDrunk
 												? "border-red-500/20 bg-red-500/5"
 												: "border-border"
-									}`}
-								>
-									{/* Rank indicator */}
-									<div className={`flex size-9 shrink-0 items-center justify-center rounded-full text-base font-bold ${
-										idx === 0
-											? "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"
+								}`}
+							>
+								{/* Rank indicator */}
+								<div className={`flex size-9 shrink-0 items-center justify-center rounded-full text-base font-bold ${
+									isLeader
+										? "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"
+										: isTrailer
+											? "bg-purple-500/15 text-purple-600 dark:text-purple-400"
 											: "bg-muted text-muted-foreground"
-									}`}>
-										{isLeader ? (
-											<Crown className="size-5" />
-										) : (
-											idx + 1
-										)}
+								}`}>
+									{isLeader ? (
+										<Crown className="size-5" />
+									) : isTrailer ? (
+										<Frown className="size-5" />
+									) : (
+										idx + 1
+									)}
 									</div>
 
 									{/* Name */}

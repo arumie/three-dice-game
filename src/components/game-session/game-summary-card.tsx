@@ -16,6 +16,7 @@ import {
 	TrendingDown,
 	Home,
 	Award,
+	Frown,
 	type LucideIcon,
 } from "lucide-react";
 import {
@@ -62,6 +63,7 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 	});
 
 	const winner = sortedStats[0];
+	const loser = sortedStats[sortedStats.length - 1];
 	const winnerName = getNameById(winner.participantId, session.participants);
 	const biggestDrinker = [...stats].sort(
 		(a, b) => b.sipsDrunk - a.sipsDrunk,
@@ -198,13 +200,17 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 							s.participantId,
 							session.participants,
 						);
-						const isWinner =
-							s.participantId === winner.participantId &&
-							s.roundsWon > 0;
-						const isMostDrunk =
-							s.participantId ===
-								biggestDrinker.participantId &&
-							s.sipsDrunk > 0;
+					const isWinner =
+						s.participantId === winner.participantId &&
+						s.roundsWon > 0;
+					const isLoser =
+						s.participantId === loser.participantId &&
+						s.participantId !== winner.participantId &&
+						sortedStats.length > 1;
+					const isMostDrunk =
+						s.participantId ===
+							biggestDrinker.participantId &&
+						s.sipsDrunk > 0;
 
 						const specialTotal =
 							s.threeOfAKindCount +
@@ -217,23 +223,27 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 								className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors sm:gap-4 sm:rounded-xl sm:px-4 sm:py-3 ${
 									isWinner
 										? "border-yellow-500/30 bg-yellow-500/5"
-										: isMostDrunk
-											? "border-red-500/20 bg-red-500/5"
-											: "border-border"
+										: isLoser
+											? "border-purple-500/30 bg-purple-500/5"
+											: isMostDrunk
+												? "border-red-500/20 bg-red-500/5"
+												: "border-border"
 								}`}
 							>
 								{/* Rank */}
 								<div
 									className={`flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold sm:size-9 sm:text-base ${
-										idx === 0
+										isWinner
 											? "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"
-											: idx === 1
-												? "bg-muted text-muted-foreground"
+											: isLoser
+												? "bg-purple-500/15 text-purple-600 dark:text-purple-400"
 												: "bg-muted text-muted-foreground"
 									}`}
 								>
 									{isWinner ? (
 										<Crown className="size-3.5 sm:size-5" />
+									) : isLoser ? (
+										<Frown className="size-3.5 sm:size-5" />
 									) : (
 										idx + 1
 									)}

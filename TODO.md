@@ -10,7 +10,7 @@
 - [x] A way to delete game sessions with an admin password (see debug panel + `deleteGameSessionAction`)
 - [ ] Add hyping mechanism that shows chances good rolls and making sure the gentleman rule is hold
   - Add confirm when last roll end turn
-- [ ] Add jester logo to loser player
+- [x] Add jester logo to loser player (using Frown icon with purple styling)
 - [x]  Add UI for showing the game rules~~ (see `src/components/game-rules-dialog.tsx`)
 - [x] Add previous rounds to the game session page~~ (see `src/components/game-session/round-browser.tsx`)
 
@@ -25,4 +25,4 @@
 
 - [ ] Refactor the components for player-turn-card, game-state-card, round-info-card, to be more composable and reusable
 - [ ] Encrypt/decrypt the password in the database for game sessions
-- [ ] Add unit tests for game session mapping functions to ensure they dont break.
+- [x] Add unit tests for game session mapping functions to ensure they dont break.

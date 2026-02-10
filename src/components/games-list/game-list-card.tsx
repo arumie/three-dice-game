@@ -6,6 +6,7 @@ import {
 	Users,
 	Dices,
 	Crown,
+	Frown,
 	Skull,
 	Clock,
 	ChevronRight,
@@ -58,6 +59,7 @@ export function GameListCard({ session, stats }: GameListCardProps) {
 	});
 
 	const leader = sortedStats[0];
+	const trailer = sortedStats[sortedStats.length - 1];
 	const biggestDrinker = [...stats].sort(
 		(a, b) => b.sipsDrunk - a.sipsDrunk,
 	)[0];
@@ -121,37 +123,47 @@ export function GameListCard({ session, stats }: GameListCardProps) {
 								s.participantId,
 								session.participants,
 							);
-							const isLeader =
-								s.participantId === leader?.participantId &&
-								s.roundsWon > 0;
-							const isMostDrunk =
-								s.participantId === biggestDrinker?.participantId &&
-								s.sipsDrunk > 0;
+						const isLeader =
+							s.participantId === leader?.participantId &&
+							s.roundsWon > 0;
+						const isTrailer =
+							s.participantId === trailer?.participantId &&
+							s.participantId !== leader?.participantId &&
+							sortedStats.length > 1;
+						const isMostDrunk =
+							s.participantId === biggestDrinker?.participantId &&
+							s.sipsDrunk > 0;
 
 							return (
 								<div
 									key={s.participantId}
-									className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs sm:gap-3 sm:px-3 sm:py-2 sm:text-sm ${
-										isLeader
-											? "bg-yellow-500/5"
+								className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs sm:gap-3 sm:px-3 sm:py-2 sm:text-sm ${
+									isLeader
+										? "bg-yellow-500/5"
+										: isTrailer
+											? "bg-purple-500/5"
 											: isMostDrunk
 												? "bg-red-500/5"
 												: ""
-									}`}
+								}`}
 								>
 									{/* Rank */}
 									<div
-										className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold sm:size-6 sm:text-xs ${
-											idx === 0
-												? "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"
+									className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold sm:size-6 sm:text-xs ${
+										isLeader
+											? "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"
+											: isTrailer
+												? "bg-purple-500/15 text-purple-600 dark:text-purple-400"
 												: "bg-muted text-muted-foreground"
-										}`}
-									>
-										{isLeader ? (
-											<Crown className="size-2.5 sm:size-3" />
-										) : (
-											idx + 1
-										)}
+									}`}
+								>
+									{isLeader ? (
+										<Crown className="size-2.5 sm:size-3" />
+									) : isTrailer ? (
+										<Frown className="size-2.5 sm:size-3" />
+									) : (
+										idx + 1
+									)}
 									</div>
 
 									{/* Name */}
