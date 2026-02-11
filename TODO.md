@@ -19,6 +19,7 @@
 - [x] Loading is slow on "end turn" button in game session
 - [x] Infinite loading on home page after having started a game
 - [x] Super stair doesnt check for previous stairs
+- [ ] Rules should contain section on "All safe"
 
 
 ## Refactorings
