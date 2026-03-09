@@ -29,8 +29,10 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
+	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -56,10 +58,24 @@ interface GameStateCardProps {
 	gameSessionId: number;
 }
 
+export const APP_DICE_EVENT = "appDiceChanged";
+
 export function GameStateCard({ session, stats, gameSessionId }: GameStateCardProps) {
 	const router = useRouter();
 	const [endGameOpen, setEndGameOpen] = useState(false);
 	const [isNavigating, setIsNavigating] = useState(false);
+
+	const appDiceKey = `useAppDice:${gameSessionId}`;
+	const [useAppDice, setUseAppDice] = useState(() => {
+		if (typeof window === "undefined") return false;
+		return sessionStorage.getItem(appDiceKey) === "true";
+	});
+
+	function toggleAppDice(checked: boolean) {
+		setUseAppDice(checked);
+		sessionStorage.setItem(appDiceKey, String(checked));
+		window.dispatchEvent(new CustomEvent(APP_DICE_EVENT, { detail: checked }));
+	}
 
 	// Reset navigating state when returning to this page (e.g. browser back)
 	useEffect(() => {
@@ -166,15 +182,30 @@ export function GameStateCard({ session, stats, gameSessionId }: GameStateCardPr
 										<span className="sr-only">Game menu</span>
 									</Button>
 								</DropdownMenuTrigger>
-								<DropdownMenuContent align="end">
-									<DropdownMenuItem
-										className="text-destructive focus:text-destructive"
-										onClick={() => setEndGameOpen(true)}
-									>
-										<LogOut className="size-4" />
-										End Game
-									</DropdownMenuItem>
-								</DropdownMenuContent>
+							<DropdownMenuContent align="end">
+								<DropdownMenuItem
+									onSelect={(e) => e.preventDefault()}
+									className="flex items-center justify-between gap-3"
+								>
+									<span className="flex items-center gap-2">
+										<Dices className="size-4" />
+										App Dice
+									</span>
+									<Switch
+										size="sm"
+										checked={useAppDice}
+										onCheckedChange={toggleAppDice}
+									/>
+								</DropdownMenuItem>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									className="text-destructive focus:text-destructive"
+									onClick={() => setEndGameOpen(true)}
+								>
+									<LogOut className="size-4" />
+									End Game
+								</DropdownMenuItem>
+							</DropdownMenuContent>
 							</DropdownMenu>
 						</div>
 					</div>

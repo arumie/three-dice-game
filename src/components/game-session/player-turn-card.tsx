@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useTransition, useOptimistic } from "react";
-import { Dices, RotateCcw, Check, Hand, Footprints, Loader2, TrendingDown } from "lucide-react";
+import { Dices, RotateCcw, Check, Hand, Footprints, Loader2, TrendingDown, Toilet } from "lucide-react";
 import {
 	Card,
 	CardContent,
@@ -17,6 +17,7 @@ import { EnterDiceDialog } from "./enter-dice-dialog";
 import { AwardSipsDialog } from "./award-sips-dialog";
 import { GentlemanRuleDialog } from "./gentleman-rule-dialog";
 import { RoundCompleteCard } from "./round-complete-card";
+import { APP_DICE_EVENT } from "./game-state-card";
 import { applyOptimisticUpdate } from "./optimistic-round";
 import type { PlayerTurnModel, RollModel, RoundModel } from "@/lib/models";
 import type { Dice, SelectGameParticipant } from "@/db/schema";
@@ -39,6 +40,7 @@ function DiceSection({
 	isSpecialRoll,
 	specialLabel,
 	isLowestRoll,
+	isShitStairsRoll,
 	latestRoll,
 	canReRoll,
 	selectedForReRoll,
@@ -53,6 +55,7 @@ function DiceSection({
 	isSpecialRoll: boolean;
 	specialLabel: string | null;
 	isLowestRoll: boolean;
+	isShitStairsRoll: boolean;
 	latestRoll: RollModel | null;
 	canReRoll: boolean;
 	selectedForReRoll: Set<number>;
@@ -97,6 +100,10 @@ function DiceSection({
 					<Badge variant="default" className="text-sm px-3 py-1">
 						{specialLabel}
 					</Badge>
+				) : isShitStairsRoll && specialLabel ? (
+					<Badge variant="outline" className="text-sm px-3 py-1 border-amber-700/50 text-amber-700 dark:text-amber-500">
+						{specialLabel}
+					</Badge>
 				) : isLowestRoll ? (
 					<Badge variant="destructive" className="text-sm px-3 py-1">
 						Lowest!
@@ -130,6 +137,19 @@ function DiceSection({
 						Rock bottom!{" "}
 						<span className="font-semibold text-amber-600 dark:text-amber-400">
 							Everyone takes a sip for that disaster
+						</span>
+					</span>
+				</div>
+			)}
+
+			{/* Shit stairs — almost but not quite */}
+			{!isRolling && isShitStairsRoll && (
+				<div className="flex items-center gap-2 rounded-md border border-amber-700/30 bg-amber-700/5 px-3 py-2 text-sm">
+					<Toilet className="size-4 text-amber-700 dark:text-amber-500" />
+					<span className="text-muted-foreground">
+						D&apos;oh!{" "}
+						<span className="font-semibold text-amber-700 dark:text-amber-500">
+							So close, yet so far from real stairs
 						</span>
 					</span>
 				</div>
@@ -187,8 +207,11 @@ function TurnActionButtons({
 	stairsSipsToAward,
 	isPending,
 	isGentlemanRuleViolation,
+	isRolling,
+	useAppDice,
 	nextPlayerName,
 	onEnterDice,
+	onRollDice,
 	onAwardSips,
 	onGentlemanRule,
 	onEndTurn,
@@ -201,8 +224,11 @@ function TurnActionButtons({
 	stairsSipsToAward: number;
 	isPending: boolean;
 	isGentlemanRuleViolation: boolean;
+	isRolling: boolean;
+	useAppDice: boolean;
 	nextPlayerName: string | null;
 	onEnterDice: () => void;
+	onRollDice: () => void;
 	onAwardSips: () => void;
 	onGentlemanRule: () => void;
 	onEndTurn: () => void;
@@ -212,10 +238,15 @@ function TurnActionButtons({
 			<CardFooter className="mt-auto flex flex-col gap-2 px-4 py-3 sm:flex-row sm:px-6 sm:py-4">
 				<Button
 					className="w-full h-14 sm:h-10"
-					onClick={onEnterDice}
+					onClick={useAppDice ? onRollDice : onEnterDice}
+					disabled={isRolling}
 				>
-					<Hand className="size-4" />
-					Enter First Roll
+					{useAppDice ? (
+						<Dices className="size-4" />
+					) : (
+						<Hand className="size-4" />
+					)}
+					{useAppDice ? "Roll Dice" : "Enter First Roll"}
 				</Button>
 			</CardFooter>
 		);
@@ -223,17 +254,17 @@ function TurnActionButtons({
 
 	return (
 		<CardFooter className="mt-auto flex flex-col gap-2 px-4 py-3 sm:flex-row sm:px-6 sm:py-4">
-			{canReRoll && (
-				<Button
-					variant={isStairsRoll ? "outline" : "default"}
-					className="w-full h-12 sm:h-10 sm:flex-1"
-					disabled={!hasSelection}
-					onClick={onEnterDice}
-				>
-					<RotateCcw className="size-4" />
-					Re-roll{hasSelection ? ` (${diceToReRoll})` : ""}
-				</Button>
-			)}
+		{canReRoll && (
+			<Button
+				variant={isStairsRoll ? "outline" : "default"}
+				className="w-full h-12 sm:h-10 sm:flex-1"
+				disabled={!hasSelection || isRolling}
+				onClick={useAppDice ? onRollDice : onEnterDice}
+			>
+				<RotateCcw className="size-4" />
+				Re-roll{hasSelection ? ` (${diceToReRoll})` : ""}
+			</Button>
+		)}
 			{isStairsRoll ? (
 				<Button
 					className="w-full h-12 sm:h-10 sm:flex-1 bg-green-600 hover:bg-green-700 text-white"
@@ -332,6 +363,7 @@ export function PlayerTurnCard({
 	const isStairsRoll =
 		latestRoll?.specialRollType === "stairs" ||
 		latestRoll?.specialRollType === "super_stairs";
+	const isShitStairsRoll = latestRoll?.specialRollType === "shit_stairs";
 	const isSpecialRoll = isStairsRoll || latestRoll?.specialRollType === "three_of_a_kind";
 
 	// Stairs sips to award using extracted utility
@@ -357,6 +389,20 @@ export function PlayerTurnCard({
 		currentScore: latestRoll?.score ?? null,
 		lowestScoreToBeat: scoreToBeat,
 	});
+
+	// "Use App Dice" — synced from GameStateCard via custom event + sessionStorage
+	const [useAppDice, setUseAppDice] = useState(() => {
+		if (typeof window === "undefined") return false;
+		return sessionStorage.getItem(`useAppDice:${gameSessionId}`) === "true";
+	});
+
+	useEffect(() => {
+		function onAppDiceChanged(e: Event) {
+			setUseAppDice((e as CustomEvent).detail);
+		}
+		window.addEventListener(APP_DICE_EVENT, onAppDiceChanged);
+		return () => window.removeEventListener(APP_DICE_EVENT, onAppDiceChanged);
+	}, []);
 
 	// Track which dice are selected for re-rolling (inverted: selected = will be re-rolled)
 	const [selectedForReRoll, setSelectedForReRoll] = useState<Set<number>>(
@@ -400,6 +446,14 @@ export function PlayerTurnCard({
 
 	const diceToReRoll = isFirstRoll ? 3 : selectedForReRoll.size;
 	const hasSelection = diceToReRoll > 0;
+
+	function handleAutoRoll() {
+		const count = isFirstRoll ? 3 : diceToReRoll;
+		const values = Array.from({ length: count }, () =>
+			Math.floor(Math.random() * 6) + 1,
+		);
+		handleDiceEntered(values, true);
+	}
 
 	function applyPendingRoll() {
 		const pending = pendingRollRef.current;
@@ -508,16 +562,16 @@ export function PlayerTurnCard({
 	return (
 		<>
 			<Card className="flex h-full flex-1 w-full flex-col">
-				<CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
-					<div className="flex items-center justify-between gap-2">
-						<CardTitle className="text-lg sm:text-xl">
-							{playerName}&apos;s Turn
-						</CardTitle>
-						<Badge variant="outline" className="text-xs">
-							Roll {rollCount} / {optimisticRound.maxRollsAllowed}
-						</Badge>
-					</div>
-				</CardHeader>
+			<CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
+				<div className="flex items-center justify-between gap-2">
+					<CardTitle className="text-lg sm:text-xl">
+						{playerName}&apos;s Turn
+					</CardTitle>
+					<Badge variant="outline" className="text-xs">
+						Roll {rollCount} / {optimisticRound.maxRollsAllowed}
+					</Badge>
+				</div>
+			</CardHeader>
 
 				<Separator />
 
@@ -530,6 +584,7 @@ export function PlayerTurnCard({
 					isSpecialRoll={isSpecialRoll}
 					specialLabel={specialLabel}
 					isLowestRoll={isLowestRoll}
+					isShitStairsRoll={isShitStairsRoll}
 					latestRoll={latestRoll}
 					canReRoll={canReRoll}
 					selectedForReRoll={selectedForReRoll}
@@ -549,21 +604,24 @@ export function PlayerTurnCard({
 
 				<Separator />
 
-			<TurnActionButtons
-				isFirstRoll={isFirstRoll}
-				canReRoll={canReRoll}
-				isStairsRoll={isStairsRoll}
-				hasSelection={hasSelection}
-				diceToReRoll={diceToReRoll}
-				stairsSipsToAward={stairsSipsToAward}
-				isPending={isPending}
-				isGentlemanRuleViolation={isGentlemanRuleViolation}
-				nextPlayerName={nextPlayerName}
-				onEnterDice={() => setEnterDiceOpen(true)}
-				onAwardSips={() => setAwardSipsOpen(true)}
-				onGentlemanRule={() => setGentlemanRuleOpen(true)}
-				onEndTurn={handleEndTurn}
-			/>
+				<TurnActionButtons
+					isFirstRoll={isFirstRoll}
+					canReRoll={canReRoll}
+					isStairsRoll={isStairsRoll}
+					hasSelection={hasSelection}
+					diceToReRoll={diceToReRoll}
+					stairsSipsToAward={stairsSipsToAward}
+					isPending={isPending}
+					isGentlemanRuleViolation={isGentlemanRuleViolation}
+					isRolling={isRolling}
+					useAppDice={useAppDice}
+					nextPlayerName={nextPlayerName}
+					onEnterDice={() => setEnterDiceOpen(true)}
+					onRollDice={handleAutoRoll}
+					onAwardSips={() => setAwardSipsOpen(true)}
+					onGentlemanRule={() => setGentlemanRuleOpen(true)}
+					onEndTurn={handleEndTurn}
+				/>
 			</Card>
 
 			<EnterDiceDialog
