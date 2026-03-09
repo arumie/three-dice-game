@@ -17,7 +17,7 @@ interface EnterDiceDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	diceCount: number;
-	onConfirm: (values: number[]) => void;
+	onConfirm: (values: number[], wasAutoRolled: boolean) => void;
 }
 
 const DICE_VALUES = [1, 2, 3, 4, 5, 6];
@@ -86,13 +86,13 @@ export function EnterDiceDialog({
 		const rolled = Array.from({ length: diceCount }, () =>
 			Math.floor(Math.random() * 6) + 1,
 		);
-		onConfirm(rolled);
+		onConfirm(rolled, true);
 		onOpenChange(false);
 	}
 
 	function handleConfirm() {
 		if (!allSelected) return;
-		onConfirm(values as number[]);
+		onConfirm(values as number[], false);
 		onOpenChange(false);
 	}
 

@@ -12,14 +12,21 @@
 
 ### TODO
 
-- [ ] Players can be added to a game session after it has started (not during a round, but between rounds)
+#### Hard
 - [ ] Player registration with persistent profiles and player stats (games played, rounds won/lost, total sips, special rolls, etc.)
+- [ ] Add a way to archive old game sessions by adding them to adding the game data to a blob storage and only saving a summarized game calculation in order to save space in the DB and make loading the games overview faster.
+
+#### Medium
+- [ ] Players can be added to a game session after it has started (not during a round, but between rounds)
 - [ ] Add hyping mechanism that shows chances good rolls - Ex. "Only one more [1] for a three of a kind", "1/6 chance to get a stair!"
-- [ ] Add "End turn - X up next" to help clear up who's next
 - [ ] Add session based setting that switches between rolls made by the app vs using dice
 - [ ] Stats - Relative stats like (avg baddest rolls)
-- [ ] Stats - Ensure that if there's even players its consistent
-- [ ] Add "Rolling" animation (Can be done by switching between dice in a quick fashion)
+
+#### Easy
+- [x] Add "End turn - X up next" to help clear up who's next (see `player-turn-card.tsx` `TurnActionButtons`)
+- [x] Stats - Ensure that if there's even players its consistent (see `game-state-card.tsx` tied stats handling)
+- [x] Add "Rolling" animation (Can be done by switching between dice in a quick fashion) (see `player-turn-card.tsx` rolling animation + `dice-display.tsx`)
+- [ ] Add info box when the player rolls a shit stair
 
 ## Bugs
 
@@ -32,7 +39,6 @@
 ### TODO
 
 - [ ] Rules should contain section on "All safe"
-- [ ] Fix shit stairs info boxes
 - [ ] Fix gentlemen rule options. 
 
 
@@ -43,5 +49,9 @@
 
 ### TODO
 - [ ] Refactor the components for player-turn-card, game-state-card, round-info-card, to be more composable and reusable
+  - [x] player-turn-card (see `player-turn-card.tsx`)
+  - [ ] game-state-card (see `game-state-card.tsx`)
+  - [ ] round-info-card (see `round-info-card.tsx`)
 - [ ] Encrypt/decrypt the password in the database for game sessions
 - [ ] Ensure that the game session can handle up to 20 players in the UI
+- [ ] Add playwright e2e tests for the game session

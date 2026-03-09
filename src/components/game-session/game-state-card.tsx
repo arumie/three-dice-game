@@ -74,15 +74,33 @@ export function GameStateCard({ session, stats, gameSessionId }: GameStateCardPr
 
 	// Sort stats for the leaderboard: fewest sips drunk = winning
 	const sortedStats = [...stats].sort((a, b) => {
-		// Most rounds won first, then fewest sips
 		if (b.roundsWon !== a.roundsWon) return b.roundsWon - a.roundsWon;
-		return a.sipsDrunk - b.sipsDrunk;
+		if (a.sipsDrunk !== b.sipsDrunk) return a.sipsDrunk - b.sipsDrunk;
+		return a.participantId - b.participantId;
 	});
 
-	// Find the leader, the trailer, and the biggest drinker
-	const leader = sortedStats[0];
-	const trailer = sortedStats[sortedStats.length - 1];
-	const biggestDrinker = [...stats].sort((a, b) => b.sipsDrunk - a.sipsDrunk)[0];
+	// Determine leader/trailer/biggest drinker by comparing stats values
+	// so all tied players get the same designation
+	const topStats = sortedStats[0];
+	const bottomStats = sortedStats[sortedStats.length - 1];
+	const maxSipsDrunk = Math.max(...stats.map((s) => s.sipsDrunk));
+
+	function isLeaderStats(s: ParticipantStats) {
+		return s.roundsWon > 0
+			&& s.roundsWon === topStats.roundsWon
+			&& s.sipsDrunk === topStats.sipsDrunk;
+	}
+
+	function isTrailerStats(s: ParticipantStats) {
+		return sortedStats.length > 1
+			&& s.roundsWon === bottomStats.roundsWon
+			&& s.sipsDrunk === bottomStats.sipsDrunk
+			&& !isLeaderStats(s);
+	}
+
+	function isMostDrunkStats(s: ParticipantStats) {
+		return s.sipsDrunk > 0 && s.sipsDrunk === maxSipsDrunk;
+	}
 
 	async function handleEndGame() {
 		setIsNavigating(true);
@@ -165,17 +183,14 @@ export function GameStateCard({ session, stats, gameSessionId }: GameStateCardPr
 				{/* Scoreboard */}
 				<CardContent className="px-4 pb-4 pt-0 sm:px-5">
 					<div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
-						{sortedStats.map((s, idx) => {
-							const name = getNameById(
-								s.participantId,
-								session.participants,
-							);
-						const isLeader = s.participantId === leader?.participantId && s.roundsWon > 0;
-						const isTrailer =
-							s.participantId === trailer?.participantId &&
-							s.participantId !== leader?.participantId &&
-							sortedStats.length > 1;
-						const isMostDrunk = s.participantId === biggestDrinker?.participantId && s.sipsDrunk > 0;
+					{sortedStats.map((s, idx) => {
+						const name = getNameById(
+							s.participantId,
+							session.participants,
+						);
+					const isLeader = isLeaderStats(s);
+					const isTrailer = isTrailerStats(s);
+					const isMostDrunk = isMostDrunkStats(s);
 
 							return (
 								<div

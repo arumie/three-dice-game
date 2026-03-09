@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 // Pip positions on a 3x3 grid for each die face value
@@ -15,6 +16,7 @@ const PIP_POSITIONS: Record<number, [row: number, col: number][]> = {
 interface DieProps {
 	value: number;
 	selected?: boolean;
+	rolling?: boolean;
 	size?: "sm" | "md" | "lg";
 	interactive?: boolean;
 	onClick?: () => void;
@@ -38,8 +40,23 @@ const gapClasses = {
 	lg: "gap-1 p-2.5",
 } as const;
 
-function Die({ value, selected, size = "md", interactive, onClick }: DieProps) {
-	const pips = PIP_POSITIONS[value] ?? [];
+function Die({ value, selected, rolling, size = "md", interactive, onClick }: DieProps) {
+	const [displayValue, setDisplayValue] = useState(value);
+
+	useEffect(() => {
+		if (!rolling) {
+			setDisplayValue(value);
+			return;
+		}
+
+		setDisplayValue(Math.ceil(Math.random() * 6));
+		const interval = setInterval(() => {
+			setDisplayValue(Math.ceil(Math.random() * 6));
+		}, 80);
+		return () => clearInterval(interval);
+	}, [rolling, value]);
+
+	const pips = PIP_POSITIONS[displayValue] ?? [];
 
 	return (
 		<button
@@ -50,7 +67,9 @@ function Die({ value, selected, size = "md", interactive, onClick }: DieProps) {
 				"relative grid grid-cols-3 grid-rows-3 rounded-lg border-2 transition-all",
 				sizeClasses[size],
 				gapClasses[size],
-			selected
+			rolling
+				? "border-primary/50 bg-primary/5 scale-105"
+				: selected
 				? "border-primary bg-primary/10 shadow-sm shadow-primary/20 ring-2 ring-primary/30"
 				: "border-border bg-card",
 				interactive && "cursor-pointer hover:border-primary/60 hover:bg-primary/5",
@@ -83,6 +102,7 @@ function Die({ value, selected, size = "md", interactive, onClick }: DieProps) {
 interface DiceDisplayProps {
 	dice: { value: number; kept: boolean }[];
 	selectedIndices?: Set<number>;
+	rollingIndices?: Set<number>;
 	size?: "sm" | "md" | "lg";
 	interactive?: boolean;
 	onToggleKeep?: (index: number) => void;
@@ -91,6 +111,7 @@ interface DiceDisplayProps {
 export function DiceDisplay({
 	dice,
 	selectedIndices,
+	rollingIndices,
 	size = "md",
 	interactive = false,
 	onToggleKeep,
@@ -102,6 +123,7 @@ export function DiceDisplay({
 					key={idx}
 					value={die.value}
 					selected={selectedIndices?.has(idx)}
+					rolling={rollingIndices?.has(idx)}
 					size={size}
 					interactive={interactive}
 					onClick={() => onToggleKeep?.(idx)}

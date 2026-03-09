@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useOptimistic } from "react";
+import { useState, useRef, useEffect, useTransition, useOptimistic } from "react";
 import { Dices, RotateCcw, Check, Hand, Footprints, Loader2, TrendingDown } from "lucide-react";
 import {
 	Card,
@@ -34,6 +34,8 @@ import { toast } from "sonner";
 function DiceSection({
 	hasDice,
 	currentDice,
+	isRolling,
+	rollingIndices,
 	isSpecialRoll,
 	specialLabel,
 	isLowestRoll,
@@ -46,6 +48,8 @@ function DiceSection({
 }: {
 	hasDice: boolean;
 	currentDice: Dice;
+	isRolling: boolean;
+	rollingIndices: Set<number>;
 	isSpecialRoll: boolean;
 	specialLabel: string | null;
 	isLowestRoll: boolean;
@@ -56,18 +60,21 @@ function DiceSection({
 	isStairsRoll: boolean;
 	onToggleKeep: (index: number) => void;
 }) {
+	const showDice = hasDice || isRolling;
+
 	return (
 		<div className="flex flex-col items-center gap-3">
-			{hasDice ? (
-				<div className={isSpecialRoll
+			{showDice ? (
+				<div className={!isRolling && isSpecialRoll
 					? "rounded-xl border-2 border-green-500 bg-green-500/5 p-3 shadow-sm shadow-green-500/20"
 					: ""
 				}>
 					<DiceDisplay
 						dice={currentDice}
-						selectedIndices={canReRoll ? selectedForReRoll : undefined}
+						selectedIndices={!isRolling && canReRoll ? selectedForReRoll : undefined}
+						rollingIndices={isRolling ? rollingIndices : undefined}
 						size="lg"
-						interactive={canReRoll}
+						interactive={!isRolling && canReRoll}
 						onToggleKeep={onToggleKeep}
 					/>
 				</div>
@@ -84,8 +91,8 @@ function DiceSection({
 				</div>
 			)}
 
-			{/* Score or special roll label */}
-			{hasDice && (
+			{/* Score or special roll label — hidden during rolling animation */}
+			{hasDice && !isRolling && (
 				isSpecialRoll && specialLabel ? (
 					<Badge variant="default" className="text-sm px-3 py-1">
 						{specialLabel}
@@ -102,7 +109,7 @@ function DiceSection({
 			)}
 
 			{/* Stairs award info */}
-			{isStairsRoll && stairsSipsToAward > 0 && (
+			{!isRolling && isStairsRoll && stairsSipsToAward > 0 && (
 				<div className="flex items-center gap-2 rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2 text-sm">
 					<Footprints className="size-4 text-green-600 dark:text-green-400" />
 					<span className="text-muted-foreground">
@@ -116,7 +123,7 @@ function DiceSection({
 			)}
 
 			{/* Lowest roll — everyone drinks */}
-			{isLowestRoll && (
+			{!isRolling && isLowestRoll && (
 				<div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-sm">
 					<TrendingDown className="size-4 text-amber-600 dark:text-amber-400" />
 					<span className="text-muted-foreground">
@@ -180,6 +187,7 @@ function TurnActionButtons({
 	stairsSipsToAward,
 	isPending,
 	isGentlemanRuleViolation,
+	nextPlayerName,
 	onEnterDice,
 	onAwardSips,
 	onGentlemanRule,
@@ -193,6 +201,7 @@ function TurnActionButtons({
 	stairsSipsToAward: number;
 	isPending: boolean;
 	isGentlemanRuleViolation: boolean;
+	nextPlayerName: string | null;
 	onEnterDice: () => void;
 	onAwardSips: () => void;
 	onGentlemanRule: () => void;
@@ -250,7 +259,7 @@ function TurnActionButtons({
 					) : (
 						<Check className="size-4" />
 					)}
-					End Turn
+					{nextPlayerName ? `End Turn — ${nextPlayerName} is up next!` : "End Turn"}
 				</Button>
 			)}
 		</CardFooter>
@@ -332,6 +341,13 @@ export function PlayerTurnCard({
 		currentTurnOrder,
 	);
 
+	// Next player in turn order (null if current player is last)
+	const currentOrderIndex = optimisticRound.playerOrder.indexOf(oCurrentParticipantId);
+	const nextParticipantId = currentOrderIndex >= 0 && currentOrderIndex < optimisticRound.playerOrder.length - 1
+		? optimisticRound.playerOrder[currentOrderIndex + 1]
+		: null;
+	const nextPlayerName = nextParticipantId != null ? getNameById(nextParticipantId, participants) : null;
+
 	// Gentleman rule: last player can't end turn if their score is too high to lose
 	const isLastPlayer = (oCurrentTurn?.turnOrder ?? -1) === optimisticRound.playerOrder.length - 1;
 	const isGentlemanRuleViolation = violatesGentlemanRule({
@@ -350,6 +366,25 @@ export function PlayerTurnCard({
 	const [awardSipsOpen, setAwardSipsOpen] = useState(false);
 	const [gentlemanRuleOpen, setGentlemanRuleOpen] = useState(false);
 
+	// Rolling animation state
+	const [rollingIndices, setRollingIndices] = useState<Set<number>>(new Set());
+	const rollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const pendingRollRef = useRef<{
+		optimisticDice: Dice;
+		values: number[];
+		reRollIndices?: number[];
+	} | null>(null);
+
+	useEffect(() => {
+		return () => {
+			if (rollingTimeoutRef.current) {
+				clearTimeout(rollingTimeoutRef.current);
+			}
+		};
+	}, []);
+
+	const isRolling = rollingIndices.size > 0;
+
 	function toggleReRoll(index: number) {
 		if (!canReRoll) return;
 		setSelectedForReRoll((prev) => {
@@ -366,7 +401,26 @@ export function PlayerTurnCard({
 	const diceToReRoll = isFirstRoll ? 3 : selectedForReRoll.size;
 	const hasSelection = diceToReRoll > 0;
 
-	function handleDiceEntered(values: number[]) {
+	function applyPendingRoll() {
+		const pending = pendingRollRef.current;
+		if (!pending) return;
+		pendingRollRef.current = null;
+
+		startTransition(async () => {
+			try {
+				addOptimistic({ type: "roll", dice: pending.optimisticDice });
+				await rollDiceAction({
+					gameSessionId,
+					diceValues: pending.values,
+					reRollIndices: pending.reRollIndices,
+				});
+			} catch {
+				toast.error("Something went wrong. Please try again.");
+			}
+		});
+	}
+
+	function handleDiceEntered(values: number[], wasAutoRolled: boolean) {
 		let optimisticDice: Dice;
 		const reRollIndices = isFirstRoll ? undefined : Array.from(selectedForReRoll);
 
@@ -384,18 +438,24 @@ export function PlayerTurnCard({
 
 		setSelectedForReRoll(new Set());
 
-		startTransition(async () => {
-			try {
-				addOptimistic({ type: "roll", dice: optimisticDice });
-				await rollDiceAction({
-					gameSessionId,
-					diceValues: values,
-					reRollIndices,
-				});
-			} catch {
-				toast.error("Something went wrong. Please try again.");
-			}
-		});
+		if (wasAutoRolled) {
+			const indices = isFirstRoll
+				? new Set([0, 1, 2])
+				: new Set(selectedForReRoll);
+
+			setRollingIndices(indices);
+			pendingRollRef.current = { optimisticDice, values, reRollIndices };
+
+			rollingTimeoutRef.current = setTimeout(() => {
+				rollingTimeoutRef.current = null;
+				setRollingIndices(new Set());
+				applyPendingRoll();
+			}, 600);
+			return;
+		}
+
+		pendingRollRef.current = { optimisticDice, values, reRollIndices };
+		applyPendingRoll();
 	}
 
 	function handleEndTurn() {
@@ -462,19 +522,21 @@ export function PlayerTurnCard({
 				<Separator />
 
 				<CardContent className="flex flex-1 flex-col items-center justify-center gap-6 px-4 py-6 sm:px-6 sm:py-8">
-					<DiceSection
-						hasDice={hasDice}
-						currentDice={currentDice}
-						isSpecialRoll={isSpecialRoll}
-						specialLabel={specialLabel}
-						isLowestRoll={isLowestRoll}
-						latestRoll={latestRoll}
-						canReRoll={canReRoll}
-						selectedForReRoll={selectedForReRoll}
-						stairsSipsToAward={stairsSipsToAward}
-						isStairsRoll={isStairsRoll}
-						onToggleKeep={toggleReRoll}
-					/>
+				<DiceSection
+					hasDice={hasDice}
+					currentDice={currentDice}
+					isRolling={isRolling}
+					rollingIndices={rollingIndices}
+					isSpecialRoll={isSpecialRoll}
+					specialLabel={specialLabel}
+					isLowestRoll={isLowestRoll}
+					latestRoll={latestRoll}
+					canReRoll={canReRoll}
+					selectedForReRoll={selectedForReRoll}
+					stairsSipsToAward={stairsSipsToAward}
+					isStairsRoll={isStairsRoll}
+					onToggleKeep={toggleReRoll}
+				/>
 
 					{scoreToBeat !== null && !isStairsRoll && (
 						<ScoreToBeatBar score={scoreToBeat} playerName={scoreToBeatName} />
@@ -487,20 +549,21 @@ export function PlayerTurnCard({
 
 				<Separator />
 
-				<TurnActionButtons
-					isFirstRoll={isFirstRoll}
-					canReRoll={canReRoll}
-					isStairsRoll={isStairsRoll}
-					hasSelection={hasSelection}
-					diceToReRoll={diceToReRoll}
-					stairsSipsToAward={stairsSipsToAward}
-					isPending={isPending}
-					isGentlemanRuleViolation={isGentlemanRuleViolation}
-					onEnterDice={() => setEnterDiceOpen(true)}
-					onAwardSips={() => setAwardSipsOpen(true)}
-					onGentlemanRule={() => setGentlemanRuleOpen(true)}
-					onEndTurn={handleEndTurn}
-				/>
+			<TurnActionButtons
+				isFirstRoll={isFirstRoll}
+				canReRoll={canReRoll}
+				isStairsRoll={isStairsRoll}
+				hasSelection={hasSelection}
+				diceToReRoll={diceToReRoll}
+				stairsSipsToAward={stairsSipsToAward}
+				isPending={isPending}
+				isGentlemanRuleViolation={isGentlemanRuleViolation}
+				nextPlayerName={nextPlayerName}
+				onEnterDice={() => setEnterDiceOpen(true)}
+				onAwardSips={() => setAwardSipsOpen(true)}
+				onGentlemanRule={() => setGentlemanRuleOpen(true)}
+				onEndTurn={handleEndTurn}
+			/>
 			</Card>
 
 			<EnterDiceDialog
