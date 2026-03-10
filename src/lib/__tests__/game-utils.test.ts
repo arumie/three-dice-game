@@ -546,9 +546,7 @@ describe("shuffleArray", () => {
   test("contains the same elements", () => {
     const input = [10, 20, 30, 40, 50];
     const result = shuffleArray(input);
-    expect(result.sort((a, b) => a - b)).toEqual(
-      input.sort((a, b) => a - b),
-    );
+    expect(result.sort((a, b) => a - b)).toEqual(input.sort((a, b) => a - b));
   });
 
   test("does not mutate the original array", () => {
@@ -624,7 +622,9 @@ describe("violatesGentlemanRule", () => {
   });
 
   test("returns false when not the last player", () => {
-    expect(violatesGentlemanRule({ ...violating, isLastPlayer: false })).toBe(false);
+    expect(violatesGentlemanRule({ ...violating, isLastPlayer: false })).toBe(
+      false,
+    );
   });
 
   test("returns false when player is safe (special roll)", () => {
@@ -632,47 +632,67 @@ describe("violatesGentlemanRule", () => {
   });
 
   test("returns false when no rolls remaining", () => {
-    expect(violatesGentlemanRule({ ...violating, hasRollsRemaining: false })).toBe(false);
+    expect(
+      violatesGentlemanRule({ ...violating, hasRollsRemaining: false }),
+    ).toBe(false);
   });
 
   test("returns false when current score is below score to beat", () => {
-    expect(violatesGentlemanRule({ ...violating, currentScore: 8 })).toBe(false);
+    expect(violatesGentlemanRule({ ...violating, currentScore: 8 })).toBe(
+      false,
+    );
   });
 
   test("returns false when current score equals score to beat (can still lose)", () => {
-    expect(violatesGentlemanRule({ ...violating, currentScore: 11 })).toBe(false);
+    expect(violatesGentlemanRule({ ...violating, currentScore: 11 })).toBe(
+      false,
+    );
   });
 
   test("returns false when current score is null (no roll yet)", () => {
-    expect(violatesGentlemanRule({ ...violating, currentScore: null })).toBe(false);
+    expect(violatesGentlemanRule({ ...violating, currentScore: null })).toBe(
+      false,
+    );
   });
 
   test("returns false when lowestScoreToBeat is null (no other non-safe players)", () => {
-    expect(violatesGentlemanRule({ ...violating, lowestScoreToBeat: null })).toBe(false);
+    expect(
+      violatesGentlemanRule({ ...violating, lowestScoreToBeat: null }),
+    ).toBe(false);
   });
 
   test("returns true when score is just 1 above the lowest", () => {
-    expect(violatesGentlemanRule({ ...violating, currentScore: 12, lowestScoreToBeat: 11 })).toBe(true);
+    expect(
+      violatesGentlemanRule({
+        ...violating,
+        currentScore: 12,
+        lowestScoreToBeat: 11,
+      }),
+    ).toBe(true);
   });
 
   test("game rules example: [1,1,6]=260 vs lowest 11 — violates", () => {
-    expect(violatesGentlemanRule({
-      isLastPlayer: true,
-      isSafe: false,
-      hasRollsRemaining: true,
-      currentScore: calculateScore(dice([1, 1, 6])), // 260
-      lowestScoreToBeat: calculateScore(dice([2, 4, 5])), // 11
-    })).toBe(true);
+    expect(
+      violatesGentlemanRule({
+        isLastPlayer: true,
+        isSafe: false,
+        hasRollsRemaining: true,
+        currentScore: calculateScore(dice([1, 1, 6])), // 260
+        lowestScoreToBeat: calculateScore(dice([2, 4, 5])), // 11
+      }),
+    ).toBe(true);
   });
 
   test("game rules example: score can lose — does not violate", () => {
-    expect(violatesGentlemanRule({
-      isLastPlayer: true,
-      isSafe: false,
-      hasRollsRemaining: true,
-      currentScore: calculateScore(dice([2, 3, 5])), // 10
-      lowestScoreToBeat: calculateScore(dice([2, 4, 5])), // 11
-    })).toBe(false);
+    expect(
+      violatesGentlemanRule({
+        isLastPlayer: true,
+        isSafe: false,
+        hasRollsRemaining: true,
+        currentScore: calculateScore(dice([2, 3, 5])), // 10
+        lowestScoreToBeat: calculateScore(dice([2, 4, 5])), // 11
+      }),
+    ).toBe(false);
   });
 });
 

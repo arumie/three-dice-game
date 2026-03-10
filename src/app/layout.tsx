@@ -41,9 +41,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-svh flex-col antialiased`}
       >
         <div className="aurora-bg" />
-        <ViewTransition>
-          {children}
-        </ViewTransition>
+        <ViewTransition>{children}</ViewTransition>
         <SiteFooter />
         <GameRulesDialog />
         <MobileToolbar />

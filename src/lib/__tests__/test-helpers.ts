@@ -35,9 +35,7 @@ function autoId() {
 
 const DEFAULT_DATE = new Date("2025-01-01T12:00:00Z");
 
-export function createRoll(
-  overrides: Partial<SelectRoll> = {},
-): SelectRoll {
+export function createRoll(overrides: Partial<SelectRoll> = {}): SelectRoll {
   return {
     id: autoId(),
     gameSessionId: 1,
@@ -68,9 +66,7 @@ export function createTurn(
 
 // ── Factory: SelectRound ────────────────────────────────────────────────────
 
-export function createRound(
-  overrides: Partial<SelectRound> = {},
-): SelectRound {
+export function createRound(overrides: Partial<SelectRound> = {}): SelectRound {
   return {
     id: autoId(),
     gameSessionId: 1,

@@ -4,7 +4,7 @@
  * to invalidate cached game state after mutations.
  */
 export function gameSessionTag(id: number): string {
-	return `game-session-${id}`;
+  return `game-session-${id}`;
 }
 
 /**

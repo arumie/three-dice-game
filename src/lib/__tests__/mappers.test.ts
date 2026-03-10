@@ -207,8 +207,16 @@ describe("mapRound", () => {
       {
         turnId: 100,
         rolls: [
-          createRoll({ playerTurnId: 100, rollNumber: 1, dice: dice([1, 4, 5]) }),
-          createRoll({ playerTurnId: 100, rollNumber: 2, dice: dice([1, 2, 6]) }),
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 1,
+            dice: dice([1, 4, 5]),
+          }),
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 2,
+            dice: dice([1, 2, 6]),
+          }),
         ],
       },
     ]);
@@ -310,13 +318,27 @@ describe("mapRound", () => {
       {
         turnId: 100,
         rolls: [
-          createRoll({ playerTurnId: 100, rollNumber: 1, dice: dice([2, 3, 5]) }),
-          createRoll({ playerTurnId: 100, rollNumber: 2, dice: dice([3, 3, 3]) }), // three_of_a_kind on roll 2
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 1,
+            dice: dice([2, 3, 5]),
+          }),
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 2,
+            dice: dice([3, 3, 3]),
+          }), // three_of_a_kind on roll 2
         ],
       },
       {
         turnId: 101,
-        rolls: [createRoll({ playerTurnId: 101, rollNumber: 1, dice: dice([1, 2, 3]) })], // stairs
+        rolls: [
+          createRoll({
+            playerTurnId: 101,
+            rollNumber: 1,
+            dice: dice([1, 2, 3]),
+          }),
+        ], // stairs
       },
     ]);
 
@@ -458,14 +480,26 @@ describe("mapRound", () => {
       {
         turnId: 100,
         rolls: [
-          createRoll({ playerTurnId: 100, rollNumber: 1, dice: dice([2, 3, 5]) }),
-          createRoll({ playerTurnId: 100, rollNumber: 2, dice: dice([3, 3, 3]) }), // three_of_a_kind on roll 2
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 1,
+            dice: dice([2, 3, 5]),
+          }),
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 2,
+            dice: dice([3, 3, 3]),
+          }), // three_of_a_kind on roll 2
         ],
       },
       {
         turnId: 101,
         rolls: [
-          createRoll({ playerTurnId: 101, rollNumber: 1, dice: dice([1, 4, 6]) }),
+          createRoll({
+            playerTurnId: 101,
+            rollNumber: 1,
+            dice: dice([1, 4, 6]),
+          }),
         ],
       },
     ]);
@@ -492,13 +526,27 @@ describe("mapRound", () => {
       {
         turnId: 100,
         rolls: [
-          createRoll({ playerTurnId: 100, rollNumber: 1, dice: dice([2, 4, 5]) }),
-          createRoll({ playerTurnId: 100, rollNumber: 2, dice: dice([1, 2, 3]) }), // stairs on roll 2
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 1,
+            dice: dice([2, 4, 5]),
+          }),
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 2,
+            dice: dice([1, 2, 3]),
+          }), // stairs on roll 2
         ],
       },
       {
         turnId: 101,
-        rolls: [createRoll({ playerTurnId: 101, rollNumber: 1, dice: dice([4, 5, 6]) })], // super_stairs
+        rolls: [
+          createRoll({
+            playerTurnId: 101,
+            rollNumber: 1,
+            dice: dice([4, 5, 6]),
+          }),
+        ], // super_stairs
       },
     ]);
 
@@ -590,9 +638,21 @@ describe("mapRound", () => {
       {
         turnId: 100,
         rolls: [
-          createRoll({ playerTurnId: 100, rollNumber: 1, dice: dice([1, 4, 5]) }),
-          createRoll({ playerTurnId: 100, rollNumber: 2, dice: dice([1, 2, 6]) }),
-          createRoll({ playerTurnId: 100, rollNumber: 3, dice: dice([1, 1, 6]) }),
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 1,
+            dice: dice([1, 4, 5]),
+          }),
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 2,
+            dice: dice([1, 2, 6]),
+          }),
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 3,
+            dice: dice([1, 1, 6]),
+          }),
         ],
       },
     ]);
@@ -617,14 +677,26 @@ describe("mapRound", () => {
       {
         turnId: 100,
         rolls: [
-          createRoll({ playerTurnId: 100, rollNumber: 1, dice: dice([1, 4, 5]) }),
-          createRoll({ playerTurnId: 100, rollNumber: 2, dice: dice([1, 2, 6]) }),
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 1,
+            dice: dice([1, 4, 5]),
+          }),
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 2,
+            dice: dice([1, 2, 6]),
+          }),
         ],
       },
       {
         turnId: 101,
         rolls: [
-          createRoll({ playerTurnId: 101, rollNumber: 1, dice: dice([2, 5, 6]) }),
+          createRoll({
+            playerTurnId: 101,
+            rollNumber: 1,
+            dice: dice([2, 5, 6]),
+          }),
         ],
       },
     ]);
@@ -648,7 +720,11 @@ describe("mapRound", () => {
       {
         turnId: 100,
         rolls: [
-          createRoll({ playerTurnId: 100, rollNumber: 1, dice: dice([1, 4, 5]) }),
+          createRoll({
+            playerTurnId: 100,
+            rollNumber: 1,
+            dice: dice([1, 4, 5]),
+          }),
         ],
       },
     ]);
@@ -768,13 +844,7 @@ describe("mapGame", () => {
       createParticipant({ gameSessionId: 1 }),
     ];
 
-    const result = mapGame(
-      session,
-      participants,
-      [],
-      new Map(),
-      new Map(),
-    );
+    const result = mapGame(session, participants, [], new Map(), new Map());
     expect(result.status).toBe("waiting");
     expect(result.startedAt).toBeNull();
   });
@@ -807,9 +877,7 @@ describe("mapGame", () => {
   test("status is 'completed' when session has completedAt", () => {
     const completedAt = new Date("2025-06-15T15:00:00Z");
     const session = createSession({ id: 1, completedAt });
-    const participants = [
-      createParticipant({ id: 10, gameSessionId: 1 }),
-    ];
+    const participants = [createParticipant({ id: 10, gameSessionId: 1 })];
     const round = createRound({
       id: 100,
       gameSessionId: 1,
@@ -898,13 +966,7 @@ describe("mapGame", () => {
       startedAt: new Date("2025-01-15T11:00:00Z"),
     });
 
-    const result = mapGame(
-      session,
-      [],
-      [round1, round2],
-      new Map(),
-      new Map(),
-    );
+    const result = mapGame(session, [], [round1, round2], new Map(), new Map());
     expect(result.startedAt).toEqual(roundStart);
   });
 });

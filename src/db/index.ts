@@ -14,16 +14,16 @@ const url = process.env.POSTGRES_URL!;
 type Database = NeonDatabase | PostgresJsDatabase;
 
 function createDb(): Database {
-	if (isLocal) {
-		return drizzlePg(postgres(url));
-	}
-	const pool = new Pool({ connectionString: url });
-	return drizzleNeon(pool);
+  if (isLocal) {
+    return drizzlePg(postgres(url));
+  }
+  const pool = new Pool({ connectionString: url });
+  return drizzleNeon(pool);
 }
 
 // Prevent connection pool exhaustion during Next.js hot reloading
 const globalForDb = globalThis as unknown as { db: Database };
 export const db: Database = globalForDb.db ?? createDb();
 if (process.env.NODE_ENV !== "production") {
-	globalForDb.db = db;
+  globalForDb.db = db;
 }

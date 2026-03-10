@@ -6,27 +6,27 @@ import { getAllGames } from "@/lib/cached-queries";
 import { Button } from "@/components/ui/button";
 
 export default async function Home() {
-	const games = await getAllGames();
-	const requiresCreationPassword = !!process.env.GAME_CREATION_PASSWORD;
+  const games = await getAllGames();
+  const requiresCreationPassword = !!process.env.GAME_CREATION_PASSWORD;
 
-	return (
-		<div className="flex flex-1 flex-col items-center px-4 py-8 sm:px-6 md:py-12">
-			{/* New Game Form */}
-			<Suspense>
-				<NewGameForm requiresCreationPassword={requiresCreationPassword} />
-			</Suspense>
+  return (
+    <div className="flex flex-1 flex-col items-center px-4 py-8 sm:px-6 md:py-12">
+      {/* New Game Form */}
+      <Suspense>
+        <NewGameForm requiresCreationPassword={requiresCreationPassword} />
+      </Suspense>
 
-			{/* Link to games list */}
-			{games.length > 0 && (
-				<div className="mt-6 w-full max-w-sm sm:max-w-md">
-					<Button variant="outline" asChild className="w-full">
-						<Link href="/games">
-							<List className="size-4" />
-							View All Games ({games.length})
-						</Link>
-					</Button>
-				</div>
-			)}
-		</div>
-	);
+      {/* Link to games list */}
+      {games.length > 0 && (
+        <div className="mt-6 w-full max-w-sm sm:max-w-md">
+          <Button variant="outline" asChild className="w-full">
+            <Link href="/games">
+              <List className="size-4" />
+              View All Games ({games.length})
+            </Link>
+          </Button>
+        </div>
+      )}
+    </div>
+  );
 }

@@ -1,33 +1,33 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "..";
 import {
-	playerTurnsTable,
-	type InsertPlayerTurn,
-	type SelectPlayerTurn,
+  playerTurnsTable,
+  type InsertPlayerTurn,
+  type SelectPlayerTurn,
 } from "../schema";
 
 /**
  * Create a new player turn
  */
 export async function createPlayerTurn(
-	data: InsertPlayerTurn,
+  data: InsertPlayerTurn,
 ): Promise<SelectPlayerTurn> {
-	const [turn] = await db.insert(playerTurnsTable).values(data).returning();
-	return turn;
+  const [turn] = await db.insert(playerTurnsTable).values(data).returning();
+  return turn;
 }
 
 /**
  * Get a player turn by ID
  */
 export async function getPlayerTurnById(
-	id: number,
+  id: number,
 ): Promise<SelectPlayerTurn | null> {
-	const [turn] = await db
-		.select()
-		.from(playerTurnsTable)
-		.where(eq(playerTurnsTable.id, id))
-		.limit(1);
-	return turn || null;
+  const [turn] = await db
+    .select()
+    .from(playerTurnsTable)
+    .where(eq(playerTurnsTable.id, id))
+    .limit(1);
+  return turn || null;
 }
 
 /**
@@ -35,45 +35,45 @@ export async function getPlayerTurnById(
  * Uses composite filter with gameSessionId for better index utilization
  */
 export async function getPlayerTurnsByRound(
-	roundId: number,
-	gameSessionId: number,
+  roundId: number,
+  gameSessionId: number,
 ): Promise<SelectPlayerTurn[]> {
-	return await db
-		.select()
-		.from(playerTurnsTable)
-		.where(
-			and(
-				eq(playerTurnsTable.gameSessionId, gameSessionId),
-				eq(playerTurnsTable.roundId, roundId),
-			),
-		)
-		.orderBy(playerTurnsTable.turnOrder);
+  return await db
+    .select()
+    .from(playerTurnsTable)
+    .where(
+      and(
+        eq(playerTurnsTable.gameSessionId, gameSessionId),
+        eq(playerTurnsTable.roundId, roundId),
+      ),
+    )
+    .orderBy(playerTurnsTable.turnOrder);
 }
 
 /**
  * Get all turns for a game session
  */
 export async function getPlayerTurnsBySession(
-	gameSessionId: number,
+  gameSessionId: number,
 ): Promise<SelectPlayerTurn[]> {
-	return await db
-		.select()
-		.from(playerTurnsTable)
-		.where(eq(playerTurnsTable.gameSessionId, gameSessionId))
-		.orderBy(playerTurnsTable.turnOrder);
+  return await db
+    .select()
+    .from(playerTurnsTable)
+    .where(eq(playerTurnsTable.gameSessionId, gameSessionId))
+    .orderBy(playerTurnsTable.turnOrder);
 }
 
 /**
  * Get all turns for a specific participant
  */
 export async function getPlayerTurnsByParticipant(
-	participantId: number,
+  participantId: number,
 ): Promise<SelectPlayerTurn[]> {
-	return await db
-		.select()
-		.from(playerTurnsTable)
-		.where(eq(playerTurnsTable.participantId, participantId))
-		.orderBy(playerTurnsTable.turnOrder);
+  return await db
+    .select()
+    .from(playerTurnsTable)
+    .where(eq(playerTurnsTable.participantId, participantId))
+    .orderBy(playerTurnsTable.turnOrder);
 }
 
 /**
@@ -81,33 +81,32 @@ export async function getPlayerTurnsByParticipant(
  * Uses composite filter with gameSessionId for better index utilization
  */
 export async function getPlayerTurn(
-	roundId: number,
-	participantId: number,
-	gameSessionId: number,
+  roundId: number,
+  participantId: number,
+  gameSessionId: number,
 ): Promise<SelectPlayerTurn | null> {
-	const [turn] = await db
-		.select()
-		.from(playerTurnsTable)
-		.where(
-			and(
-				eq(playerTurnsTable.gameSessionId, gameSessionId),
-				eq(playerTurnsTable.roundId, roundId),
-				eq(playerTurnsTable.participantId, participantId),
-			),
-		)
-		.limit(1);
-	return turn || null;
+  const [turn] = await db
+    .select()
+    .from(playerTurnsTable)
+    .where(
+      and(
+        eq(playerTurnsTable.gameSessionId, gameSessionId),
+        eq(playerTurnsTable.roundId, roundId),
+        eq(playerTurnsTable.participantId, participantId),
+      ),
+    )
+    .limit(1);
+  return turn || null;
 }
 
 /**
  * Check if a participant has already taken their turn in a round
  */
 export async function hasParticipantTakenTurn(
-	roundId: number,
-	participantId: number,
-	gameSessionId: number,
+  roundId: number,
+  participantId: number,
+  gameSessionId: number,
 ): Promise<boolean> {
-	const turn = await getPlayerTurn(roundId, participantId, gameSessionId);
-	return turn !== null;
+  const turn = await getPlayerTurn(roundId, participantId, gameSessionId);
+  return turn !== null;
 }
-
