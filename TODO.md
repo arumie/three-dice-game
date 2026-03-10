@@ -27,6 +27,7 @@
 
 #### Easy
 - [x] Add info box when the player rolls a shit stair (see `player-turn-card.tsx` DiceSection)
+- [ ] Update the end round screen with how many sips each player added to the final sip count and who they awarded stair sips to and how much
 
 ## Bugs
 
