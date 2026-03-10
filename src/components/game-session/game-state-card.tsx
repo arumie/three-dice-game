@@ -1,34 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Beer,
-  Trophy,
-  Users,
-  Dices,
-  MoreVertical,
-  LogOut,
   Crown,
+  Dices,
   Frown,
+  Home,
+  LogOut,
+  MoreVertical,
   Skull,
   Toilet,
   TrendingDown,
-  Home,
+  Trophy,
+  Users,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { endGameAction } from "@/app/actions";
 import { DiceLoading } from "@/components/dice-loading";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Switch } from "@/components/ui/switch";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,14 +30,24 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import type { GameModel, ParticipantStats } from "@/lib/models";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 import {
   formatStatus,
   getNameById,
   getStatusVariant,
 } from "@/lib/game-helpers";
-import { endGameAction } from "@/app/actions";
-import { toast } from "sonner";
+import type { GameModel, ParticipantStats } from "@/lib/models";
+import { BeerTracker } from "./beer-tracker";
 
 interface GameStateCardProps {
   session: GameModel;
@@ -82,6 +83,8 @@ export function GameStateCard({
     setIsNavigating(false);
     setEndGameOpen(false);
   }, [gameSessionId]);
+
+  const statIconSize = "size-3 sm:size-5";
 
   const completedRounds = session.rounds.filter(
     (r) => r.status === "completed",
@@ -233,7 +236,7 @@ export function GameStateCard({
               return (
                 <div
                   key={s.participantId}
-                  className={`flex items-center gap-4 rounded-xl border px-4 py-3 transition-colors ${
+                  className={`flex flex-col gap-2 rounded-xl border px-4 py-3 transition-colors ${
                     isLeader
                       ? "border-yellow-500/30 bg-yellow-500/5"
                       : isTrailer
@@ -243,83 +246,89 @@ export function GameStateCard({
                           : "border-border"
                   }`}
                 >
-                  {/* Rank indicator */}
-                  <div
-                    className={`flex size-9 shrink-0 items-center justify-center rounded-full text-base font-bold ${
-                      isLeader
-                        ? "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"
-                        : isTrailer
-                          ? "bg-purple-500/15 text-purple-600 dark:text-purple-400"
-                          : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {isLeader ? (
-                      <Crown className="size-5" />
-                    ) : isTrailer ? (
-                      <Frown className="size-5" />
-                    ) : (
-                      idx + 1
-                    )}
-                  </div>
-
-                  {/* Name */}
-                  <span className="flex-1 truncate text-base font-semibold">
-                    {name}
-                  </span>
-
-                  {/* Stats */}
-                  <div className="flex items-center gap-4 text-base tabular-nums">
-                    <span
-                      className="flex items-center gap-1.5 font-bold text-primary"
-                      title="Rounds won"
-                    >
-                      <Trophy className="size-5" />
-                      {s.roundsWon}
-                    </span>
-                    <span
-                      className={`flex items-center gap-1.5 font-bold ${
-                        isMostDrunk ? "text-red-500" : "text-muted-foreground"
+                  <div className="flex items-center gap-4 mb-2">
+                    {/* Rank indicator */}
+                    <div
+                      className={`flex size-9 shrink-0 items-center justify-center rounded-full text-base font-bold ${
+                        isLeader
+                          ? "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400"
+                          : isTrailer
+                            ? "bg-purple-500/15 text-purple-600 dark:text-purple-400"
+                            : "bg-muted text-muted-foreground"
                       }`}
-                      title="Sips drunk"
                     >
-                      {isMostDrunk ? (
-                        <Skull className="size-5" />
+                      {isLeader ? (
+                        <Crown className="size-5" />
+                      ) : isTrailer ? (
+                        <Frown className="size-5" />
                       ) : (
-                        <Beer className="size-5" />
+                        idx + 1
                       )}
-                      {s.sipsDrunk}
+                    </div>
+
+                    {/* Name */}
+                    <span className="min-w-0 flex-1 truncate text-base font-semibold">
+                      {name}
                     </span>
-                    {s.threeOfAKindCount + s.stairsCount + s.superStairsCount >
-                      0 && (
+
+                    {/* Stats */}
+                    <div className="flex items-center gap-2 text-sm tabular-nums sm:gap-4 sm:text-base">
                       <span
-                        className="flex items-center gap-1.5 font-bold text-amber-600 dark:text-amber-400"
-                        title={`${s.threeOfAKindCount} three of a kind, ${s.stairsCount} stairs, ${s.superStairsCount} super stairs`}
+                        className="flex items-center gap-1 font-bold text-primary sm:gap-1.5"
+                        title="Rounds won"
                       >
-                        <Dices className="size-5" />
-                        {s.threeOfAKindCount +
-                          s.stairsCount +
-                          s.superStairsCount}
+                        <Trophy className={statIconSize} />
+                        {s.roundsWon}
                       </span>
-                    )}
-                    {s.shitStairsCount > 0 && (
                       <span
-                        className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-600"
-                        title="Shit stairs"
+                        className={`flex items-center gap-1 font-bold sm:gap-1.5 ${
+                          isMostDrunk ? "text-red-500" : "text-muted-foreground"
+                        }`}
+                        title="Sips drunk"
                       >
-                        <Toilet className="size-5" />
-                        {s.shitStairsCount}
+                        {isMostDrunk ? (
+                          <Skull className={statIconSize} />
+                        ) : (
+                          <Beer className={statIconSize} />
+                        )}
+                        {s.sipsDrunk}
                       </span>
-                    )}
-                    {s.lowestScoreCount > 0 && (
-                      <span
-                        className="flex items-center gap-1.5 font-bold text-amber-600 dark:text-amber-400"
-                        title="Lowest score rolls"
-                      >
-                        <TrendingDown className="size-5" />
-                        {s.lowestScoreCount}
-                      </span>
-                    )}
+                      {s.threeOfAKindCount +
+                        s.stairsCount +
+                        s.superStairsCount >
+                        0 && (
+                        <span
+                          className="flex items-center gap-1 font-bold text-amber-600 sm:gap-1.5 dark:text-amber-400"
+                          title={`${s.threeOfAKindCount} three of a kind, ${s.stairsCount} stairs, ${s.superStairsCount} super stairs`}
+                        >
+                          <Dices className={statIconSize} />
+                          {s.threeOfAKindCount +
+                            s.stairsCount +
+                            s.superStairsCount}
+                        </span>
+                      )}
+                      {s.shitStairsCount > 0 && (
+                        <span
+                          className="flex items-center gap-1 font-bold text-amber-800 sm:gap-1.5 dark:text-amber-600"
+                          title="Shit stairs"
+                        >
+                          <Toilet className={statIconSize} />
+                          {s.shitStairsCount}
+                        </span>
+                      )}
+                      {s.lowestScoreCount > 0 && (
+                        <span
+                          className="flex items-center gap-1 font-bold text-amber-600 sm:gap-1.5 dark:text-amber-400"
+                          title="Lowest score rolls"
+                        >
+                          <TrendingDown className={statIconSize} />
+                          {s.lowestScoreCount}
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  {/* Beer tracker */}
+                  <BeerTracker sipsDrunk={s.sipsDrunk} />
                 </div>
               );
             })}
