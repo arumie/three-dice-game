@@ -12,6 +12,9 @@
 - [x] Add "End turn - X up next" to help clear up who's next (see `player-turn-card.tsx` `TurnActionButtons`)
 - [x] Stats - Ensure that if there's even players its consistent (see `game-state-card.tsx` tied stats handling)
 - [x] Add "Rolling" animation (Can be done by switching between dice in a quick fashion) (see `player-turn-card.tsx` rolling animation + `dice-display.tsx`)
+- [x] Add info box when the player rolls a shit stair (see `player-turn-card.tsx` DiceSection)
+- [x] Add session based setting that switches between rolls made by the app vs using dice (see `player-turn-card.tsx` "App Dice" toggle with sessionStorage)
+- [x] Update the end round screen with how many sips each player added to the final sip count and who they awarded stair sips to and how much (see `round-complete-card.tsx` sip annotations on `TurnScoreRow`)
 
 ### TODO
 
@@ -22,12 +25,7 @@
 #### Medium
 - [ ] Players can be added to a game session after it has started (not during a round, but between rounds)
 - [ ] Add hyping mechanism that shows chances good rolls - Ex. "Only one more [1] for a three of a kind", "1/6 chance to get a stair!"
-- [x] Add session based setting that switches between rolls made by the app vs using dice (see `player-turn-card.tsx` "App Dice" toggle with sessionStorage)
 - [ ] Stats - Relative stats like (avg baddest rolls)
-
-#### Easy
-- [x] Add info box when the player rolls a shit stair (see `player-turn-card.tsx` DiceSection)
-- [ ] Update the end round screen with how many sips each player added to the final sip count and who they awarded stair sips to and how much
 
 ## Bugs
 

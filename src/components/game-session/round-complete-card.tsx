@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { TiebreakerDialog } from "./tiebreaker-dialog";
+import { DiceDisplay } from "./dice-display";
 import type { RoundModel } from "@/lib/models";
 import type { SelectGameParticipant } from "@/db/schema";
 import {
@@ -29,7 +30,11 @@ import {
   getNameById,
   formatNamesList,
 } from "@/lib/game-helpers";
-import { computeLowestRollCounts } from "@/lib/game-utils";
+import {
+  computeLowestRollCounts,
+  computeStairsSipsToAward,
+  getThreeOfAKindSips,
+} from "@/lib/game-utils";
 
 // ─── Presentational Sub-components ───────────────────────────────────────────
 
@@ -64,6 +69,37 @@ function LowestRollsBanner({
   );
 }
 
+function getSipAnnotation(
+  turn: RoundModel["turns"][number],
+  participants: SelectGameParticipant[],
+): { text: string } | null {
+  if (turn.specialRollType === "three_of_a_kind" && turn.rolls.length > 0) {
+    const lastRoll = turn.rolls[turn.rolls.length - 1];
+    const sips = getThreeOfAKindSips(lastRoll.dice[0].value);
+    return { text: `Added ${sips} sips to the penalty` };
+  }
+
+  if (
+    (turn.specialRollType === "stairs" ||
+      turn.specialRollType === "super_stairs") &&
+    turn.sipsAwardedTo != null
+  ) {
+    const sips = computeStairsSipsToAward(turn.specialRollType, turn.turnOrder);
+    const targetName = getNameById(turn.sipsAwardedTo, participants);
+    return {
+      text: `Awarded ${sips} ${sips === 1 ? "sip" : "sips"} to ${targetName}`,
+    };
+  }
+
+  return null;
+}
+
+function SipAnnotation({ annotation }: { annotation: { text: string } }) {
+  const color = "text-amber-600 dark:text-amber-400";
+
+  return <p className={`text-xs ${color}`}>{annotation.text}</p>;
+}
+
 function TurnScoreRow({
   turn,
   participants,
@@ -77,44 +113,59 @@ function TurnScoreRow({
 }) {
   const name = getNameById(turn.participantId, participants);
   const special = formatSpecialRoll(turn.specialRollType);
+  const annotation = getSipAnnotation(turn, participants);
+  const lastRoll =
+    turn.rolls.length > 0 ? turn.rolls[turn.rolls.length - 1] : null;
 
   if (variant === "safe") {
     return (
-      <div className="flex items-center justify-between rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2">
-        <span className="text-sm font-medium">{name}</span>
-        {special ? (
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-            {special}
-          </Badge>
-        ) : (
-          <span className="text-sm font-semibold tabular-nums">
-            {turn.finalScore ?? "—"}
-          </span>
+      <div className="flex flex-col gap-1.5 rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">{name}</span>
+          {special && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+              {special}
+            </Badge>
+          )}
+        </div>
+        {lastRoll && (
+          <div className="flex items-center gap-2">
+            <DiceDisplay dice={lastRoll.dice} size="sm" />
+            <span className="text-sm font-semibold tabular-nums text-muted-foreground">
+              ({turn.finalScore ?? "—"})
+            </span>
+          </div>
         )}
+        {annotation && <SipAnnotation annotation={annotation} />}
       </div>
     );
   }
 
   return (
     <div
-      className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
+      className={`flex flex-col gap-1.5 rounded-xl border px-4 py-3 ${
         isLoser ? "border-destructive/30 bg-destructive/5" : ""
       }`}
     >
-      <span
-        className={`text-base font-semibold ${isLoser ? "text-destructive" : ""}`}
-      >
-        {name}
-      </span>
-      {special ? (
-        <Badge variant="outline" className="text-xs px-2.5 py-0.5">
-          {special}
-        </Badge>
-      ) : (
-        <span className="text-base font-bold tabular-nums">
-          {turn.finalScore ?? "—"}
+      <div className="flex items-center justify-between">
+        <span
+          className={`text-base font-semibold ${isLoser ? "text-destructive" : ""}`}
+        >
+          {name}
         </span>
-      )}
+        {lastRoll && (
+          <div className="flex items-center gap-4">
+            <Badge
+              variant="outline"
+              className={`text-xs px-2.5 py-0.5 ${special ? "text-amber-600 dark:text-amber-400" : ""}`}
+            >
+              {special ?? turn.finalScore ?? "—"}
+            </Badge>
+            <DiceDisplay dice={lastRoll.dice} size="sm" />
+          </div>
+        )}
+      </div>
+      {annotation && <SipAnnotation annotation={annotation} />}
     </div>
   );
 }
