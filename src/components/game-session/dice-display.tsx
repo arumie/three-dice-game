@@ -42,24 +42,27 @@ interface DieProps {
   value: number;
   selected?: boolean;
   rolling?: boolean;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   interactive?: boolean;
   onClick?: () => void;
 }
 
 const sizeClasses = {
+  xs: "size-7",
   sm: "size-10",
   md: "size-14",
   lg: "size-18",
 } as const;
 
 const pipSizeClasses = {
+  xs: "size-1",
   sm: "size-1.5",
   md: "size-2",
   lg: "size-2.5",
 } as const;
 
 const gapClasses = {
+  xs: "gap-0 p-1",
   sm: "gap-0.5 p-1.5",
   md: "gap-1 p-2",
   lg: "gap-1 p-2.5",
@@ -96,7 +99,8 @@ function Die({
       disabled={!interactive}
       onClick={onClick}
       className={cn(
-        "relative grid grid-cols-3 grid-rows-3 rounded-lg border-2 transition-all",
+        "relative grid grid-cols-3 grid-rows-3 transition-all",
+        size === "xs" ? "rounded-md border" : "rounded-lg border-2",
         sizeClasses[size],
         gapClasses[size],
         rolling
@@ -136,7 +140,7 @@ interface DiceDisplayProps {
   dice: { value: number; kept: boolean }[];
   selectedIndices?: Set<number>;
   rollingIndices?: Set<number>;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
   interactive?: boolean;
   onToggleKeep?: (index: number) => void;
 }

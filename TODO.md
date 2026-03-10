@@ -26,6 +26,7 @@
 - [ ] Players can be added to a game session after it has started (not during a round, but between rounds)
 - [ ] Add hyping mechanism that shows chances good rolls - Ex. "Only one more [1] for a three of a kind", "1/6 chance to get a stair!"
 - [ ] Stats - Relative stats like (avg baddest rolls)
+- [ ] Add "beer" tracking. Add the number of beers that a player has to have consumed (14 sips pr beer). Add to game state card. The beers should be an actual beer icon (one for each beer that needs  to have been consumed) and should show how the level of the beer should be for the current one the player is on.
 
 ## Bugs
 

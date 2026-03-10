@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { TiebreakerDialog } from "./tiebreaker-dialog";
 import { DiceDisplay } from "./dice-display";
+import { cn } from "@/lib/utils";
 import type { RoundModel } from "@/lib/models";
 import type { SelectGameParticipant } from "@/db/schema";
 import {
@@ -116,56 +117,45 @@ function TurnScoreRow({
   const annotation = getSipAnnotation(turn, participants);
   const lastRoll =
     turn.rolls.length > 0 ? turn.rolls[turn.rolls.length - 1] : null;
-
-  if (variant === "safe") {
-    return (
-      <div className="flex flex-col gap-1.5 rounded-md border border-green-500/30 bg-green-500/5 px-3 py-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">{name}</span>
-          {special && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-              {special}
-            </Badge>
-          )}
-        </div>
-        {lastRoll && (
-          <div className="flex items-center gap-2">
-            <DiceDisplay dice={lastRoll.dice} size="sm" />
-            <span className="text-sm font-semibold tabular-nums text-muted-foreground">
-              ({turn.finalScore ?? "—"})
-            </span>
-          </div>
-        )}
-        {annotation && <SipAnnotation annotation={annotation} />}
-      </div>
-    );
-  }
+  const isSafe = variant === "safe";
 
   return (
     <div
-      className={`flex flex-col gap-1.5 rounded-xl border px-4 py-3 ${
-        isLoser ? "border-destructive/30 bg-destructive/5" : ""
-      }`}
+      className={cn(
+        "flex flex-col gap-1.5 border",
+        isSafe
+          ? "rounded-md border-green-500/30 bg-green-500/5 px-3 py-2"
+          : cn(
+              "rounded-xl px-4 py-3",
+              isLoser && "border-destructive/30 bg-destructive/5",
+            ),
+      )}
     >
       <div className="flex items-center justify-between">
         <span
-          className={`text-base font-semibold ${isLoser ? "text-destructive" : ""}`}
+          className={cn(
+            isSafe ? "text-sm font-medium" : "text-base font-semibold",
+            isLoser && "text-destructive",
+          )}
         >
           {name}
         </span>
-        {lastRoll && (
-          <div className="flex items-center gap-4">
-            <Badge
-              variant="outline"
-              className={`text-xs px-2.5 py-0.5 ${special ? "text-amber-600 dark:text-amber-400" : ""}`}
-            >
-              {special ?? turn.finalScore ?? "—"}
-            </Badge>
-            <DiceDisplay dice={lastRoll.dice} size="sm" />
-          </div>
-        )}
+        <Badge
+          variant="outline"
+          className={cn(
+            isSafe ? "text-[10px] px-1.5 py-0" : "text-xs px-2.5 py-0.5",
+            special && "text-amber-600 dark:text-amber-400",
+          )}
+        >
+          {special ?? turn.finalScore ?? "—"}
+        </Badge>
       </div>
-      {annotation && <SipAnnotation annotation={annotation} />}
+      {(lastRoll || annotation) && (
+        <div className="flex items-center justify-between">
+          {annotation ? <SipAnnotation annotation={annotation} /> : <span />}
+          {lastRoll && <DiceDisplay dice={lastRoll.dice} size="xs" />}
+        </div>
+      )}
     </div>
   );
 }
@@ -226,7 +216,7 @@ function RoundOutcomeBanner({
           </p>
         </>
       )}
-      <Badge variant="destructive" className="text-sm px-3 py-1">
+      <Badge variant="destructive" className="text-lg px-3 py-1">
         {round.finalPenaltySips} {round.finalPenaltySips === 1 ? "sip" : "sips"}
         {isTiedLoss ? " each" : ""}
       </Badge>
