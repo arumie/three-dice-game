@@ -249,6 +249,20 @@ export function GameRulesDialog() {
                 wins. Still tied? Re-roll until someone comes out on top.
               </p>
             </section>
+
+            {/* All safe */}
+            <section>
+              <h3 className="mb-1.5 font-semibold">All Safe</h3>
+              <p className="text-muted-foreground">
+                When <strong className="text-foreground">every</strong> player
+                in a round rolls a safe special &mdash; Stairs, Super Stairs, or
+                Three of a Kind &mdash; nobody loses! The round ends without a
+                loser, but the penalty sips{" "}
+                <strong className="text-foreground">carry over</strong> to the
+                next round. The stakes just keep climbing until someone finally
+                takes the fall.
+              </p>
+            </section>
           </div>
 
           <DialogFooter

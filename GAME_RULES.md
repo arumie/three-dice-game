@@ -134,6 +134,12 @@ Example: If the starting player rolls (1, 1, 1) they have to drink 7 sips and th
 
 If two or more players end the round with the same lowest score (and none of them are safe), they **all** drink the full penalty. After the loss screen, a tiebreaker die roll determines who starts the next round: each tied loser rolls a single die, and the highest roll wins. If the tiebreaker is also tied, the tied players re-roll until someone wins.
 
+#### All safe
+
+If every player in a round rolls a safe special roll (Stairs, Super Stairs, or Three of a Kind — but **not** Shit Stairs), nobody loses the round. However, the accumulated penalty sips carry over to the next round instead of resetting to 1. This means the penalty keeps growing until someone finally loses a round and has to drink it all.
+
+Example: Player A rolls (1, 2, 3) Stairs, Player B rolls (4, 4, 4) Three of a Kind (+4 sips), and Player C rolls (1, 2, 3) Stairs. Everyone is safe, so nobody drinks, but the penalty of 5 sips (1 base + 4 from three 4s) carries over to the next round. The next round starts with a penalty of 6 sips (5 carried over + 1 base).
+
 #### Gentlemen's rules
 
 There are some gentleman's rules that the players can choose to follow (it is frowned upon to break these rules!)
