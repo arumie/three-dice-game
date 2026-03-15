@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { endGameAction } from "@/app/actions";
+import { suppressGameSync } from "@/lib/game-sync";
 import { DiceLoading } from "@/components/dice-loading";
 import {
   AlertDialog,
@@ -123,6 +124,7 @@ export function GameStateCard({
   }
 
   async function handleEndGame() {
+    suppressGameSync();
     setIsNavigating(true);
     try {
       // Show loading for at least 1 second before the action fires,

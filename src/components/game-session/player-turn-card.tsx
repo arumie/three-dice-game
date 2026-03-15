@@ -7,6 +7,7 @@ import {
   useTransition,
   useOptimistic,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   Dices,
   RotateCcw,
@@ -46,6 +47,7 @@ import {
   computeStairsSipsToAward,
 } from "@/lib/game-utils";
 import { rollDiceAction, endTurnAction, startRoundAction } from "@/app/actions";
+import { suppressGameSync } from "@/lib/game-sync";
 import { toast } from "sonner";
 
 // ─── Presentational Sub-components ───────────────────────────────────────────
@@ -345,6 +347,27 @@ export function PlayerTurnCard({
     round,
     applyOptimisticUpdate,
   );
+  const router = useRouter();
+
+  const PENDING_TIMEOUT_MS = 5_000;
+  const [isTimedOut, setIsTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (!isPending) {
+      setIsTimedOut(false);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setIsTimedOut(true);
+      toast.error("Action timed out. Please try again.");
+      router.refresh();
+    }, PENDING_TIMEOUT_MS);
+
+    return () => clearTimeout(timeout);
+  }, [isPending, router]);
+
+  const effectivePending = isPending && !isTimedOut;
 
   // Derive current state from the optimistic round
   const oCurrentTurn =
@@ -508,6 +531,7 @@ export function PlayerTurnCard({
     if (!pending) return;
     pendingRollRef.current = null;
 
+    suppressGameSync();
     startTransition(async () => {
       try {
         addOptimistic({ type: "roll", dice: pending.optimisticDice });
@@ -563,6 +587,7 @@ export function PlayerTurnCard({
   }
 
   function handleEndTurn() {
+    suppressGameSync();
     startTransition(async () => {
       try {
         addOptimistic({ type: "endTurn" });
@@ -574,6 +599,7 @@ export function PlayerTurnCard({
   }
 
   function handleAwardSips(targetParticipantId: number) {
+    suppressGameSync();
     startTransition(async () => {
       try {
         addOptimistic({ type: "endTurn" });
@@ -588,6 +614,7 @@ export function PlayerTurnCard({
   }
 
   function handleStartRound(startingParticipantId?: number) {
+    suppressGameSync();
     startTransition(async () => {
       try {
         await startRoundAction({ gameSessionId, startingParticipantId });
@@ -604,7 +631,7 @@ export function PlayerTurnCard({
       <RoundCompleteCard
         round={optimisticRound}
         participants={participants}
-        isPending={isPending}
+        isPending={effectivePending}
         onStartRound={handleStartRound}
       />
     );
@@ -666,7 +693,7 @@ export function PlayerTurnCard({
           hasSelection={hasSelection}
           diceToReRoll={diceToReRoll}
           stairsSipsToAward={stairsSipsToAward}
-          isPending={isPending}
+          isPending={effectivePending}
           isGentlemanRuleViolation={isGentlemanRuleViolation}
           isRolling={isRolling}
           useAppDice={useAppDice}

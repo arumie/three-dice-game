@@ -7,6 +7,7 @@ import { PlayerTurnCard } from "@/components/game-session/player-turn-card";
 import { MobileGameDrawer } from "@/components/game-session/mobile-game-drawer";
 import { DebugPanel } from "@/components/game-session/debug-panel";
 import { PasswordGate } from "@/components/game-session/password-gate";
+import { GameSessionSync } from "@/components/game-session/game-session-sync";
 
 interface GameSessionPageProps {
   params: Promise<{ id: string }>;
@@ -104,8 +105,9 @@ export default async function GameSessionPage({
           gameSessionId={gameSessionId}
         />
 
-        {/* Debug tools */}
+        {/* Debug tools & live viewers */}
         <DebugPanel session={session} gameSessionId={gameSessionId} />
+        <GameSessionSync gameSessionId={gameSessionId} />
       </div>
     </PasswordGate>
   );

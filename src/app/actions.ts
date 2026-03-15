@@ -24,6 +24,7 @@ import {
 import { gameSessionTag, ALL_GAMES_TAG, playerTag } from "@/lib/cache-tags";
 import { requireGameAuth, setGameAuthCookie } from "@/lib/game-auth";
 import { hashPlayerPassword, verifyPlayerPassword } from "@/lib/player-auth";
+import { publishGameUpdate, getSyncSenderId } from "@/lib/ably-server";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_-]+( [a-zA-Z0-9_-]+)*$/;
 const USERNAME_MAX_LENGTH = 30;
@@ -175,6 +176,7 @@ export async function rollDiceAction(data: {
   diceValues: number[];
   reRollIndices?: number[];
 }) {
+  const senderId = await getSyncSenderId();
   // Fetch session (for auth) and latest round (for recordRoll) in parallel
   const [session, round] = await Promise.all([
     getGameSessionById(data.gameSessionId),
@@ -189,6 +191,7 @@ export async function rollDiceAction(data: {
   );
   updateTag(gameSessionTag(data.gameSessionId));
   updateTag(ALL_GAMES_TAG);
+  publishGameUpdate(data.gameSessionId, senderId);
 }
 
 /**
@@ -200,6 +203,7 @@ export async function endTurnAction(data: {
   gameSessionId: number;
   awardedToParticipantId?: number;
 }) {
+  const senderId = await getSyncSenderId();
   // Fetch session (for auth) and latest round (for endCurrentTurn) in parallel
   const [session, round] = await Promise.all([
     getGameSessionById(data.gameSessionId),
@@ -209,6 +213,7 @@ export async function endTurnAction(data: {
   await endCurrentTurn(data.gameSessionId, data.awardedToParticipantId, round!);
   updateTag(gameSessionTag(data.gameSessionId));
   updateTag(ALL_GAMES_TAG);
+  publishGameUpdate(data.gameSessionId, senderId);
 }
 
 /**
@@ -218,22 +223,26 @@ export async function startRoundAction(data: {
   gameSessionId: number;
   startingParticipantId?: number;
 }) {
+  const senderId = await getSyncSenderId();
   // Fetch session for auth — createRound does its own parallel fetch internally
   const session = await getGameSessionById(data.gameSessionId);
   await requireGameAuth(data.gameSessionId, session!);
   await createRound(data.gameSessionId, data.startingParticipantId);
   updateTag(gameSessionTag(data.gameSessionId));
   updateTag(ALL_GAMES_TAG);
+  publishGameUpdate(data.gameSessionId, senderId);
 }
 
 /**
  * End the game session. Marks it as completed.
  */
 export async function endGameAction(data: { gameSessionId: number }) {
+  const senderId = await getSyncSenderId();
   await requireGameAuth(data.gameSessionId);
   await completeGameSession(data.gameSessionId);
   updateTag(gameSessionTag(data.gameSessionId));
   updateTag(ALL_GAMES_TAG);
+  publishGameUpdate(data.gameSessionId, senderId);
 }
 
 /**
@@ -264,9 +273,11 @@ export async function reopenGameSessionAction(
   if (!expected || adminPassword !== expected) {
     return { success: false, error: "Invalid admin password" };
   }
+  const senderId = await getSyncSenderId();
   await reopenGameSession(gameSessionId);
   updateTag(gameSessionTag(gameSessionId));
   updateTag(ALL_GAMES_TAG);
+  publishGameUpdate(gameSessionId, senderId);
   return { success: true };
 }
 
@@ -357,9 +368,11 @@ export async function reassignGuestToPlayerAction(
     };
   }
 
+  const senderId = await getSyncSenderId();
   await reassignParticipantToPlayer(participantId, player.id);
   updateTag(gameSessionTag(participant.gameSessionId));
   updateTag(ALL_GAMES_TAG);
+  publishGameUpdate(participant.gameSessionId, senderId);
 
   return { success: true };
 }
