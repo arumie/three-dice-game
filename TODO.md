@@ -17,14 +17,15 @@
 - [x] Update the end round screen with how many sips each player added to the final sip count and who they awarded stair sips to and how much (see `round-complete-card.tsx` sip annotations on `TurnScoreRow`) ([a793b67](https://github.com/arumie/three-dice-game/commit/a793b67), [f695f91](https://github.com/arumie/three-dice-game/commit/f695f91))
 - [x] Add "beer" tracking. Add the number of beers that a player has to have consumed (14 sips pr beer). Add to game state card. The beers should be an actual beer icon (one for each beer that needs  to have been consumed) and should show how the level of the beer should be for the current one the player is on. (see `beer-bottle.tsx`, `beer-tracker.tsx`, `game-state-card.tsx`) ([307e502](https://github.com/arumie/three-dice-game/commit/307e502))
 - [x] Player registration with persistent profiles and player stats (games played, rounds won/lost, total sips, special rolls, etc.) ([afce81b](https://github.com/arumie/three-dice-game/commit/afce81b))
+- [x] Add system for checking for changes if multiple players are looking at the same game session and update the game session in real time if changes are detected. ([08d3dbb](https://github.com/arumie/three-dice-game/commit/08d3dbb))
 
 ### TODO
 
 #### Hard
 - [ ] Add a way to archive old game sessions by adding them to adding the game data to a blob storage and only saving a summarized game calculation in order to save space in the DB and make loading the games overview faster.
-- [ ] Add system for checking for changes if multiple players are looking at the same game session and update the game session in real time if changes are detected.
 
 #### Medium
+- [ ] Add player/spectator mode selection when joining a game session. Choose whether you play as a single player or control all players. Lock action buttons on devices whose turn it isn't, so only the active player's device can interact.
 - [ ] Players can be added to a game session after it has started (not during a round, but between rounds)
 - [ ] Add hyping mechanism that shows chances good rolls - Ex. "Only one more [1] for a three of a kind", "1/6 chance to get a stair!"
 - [ ] Stats - Relative stats like (avg baddest rolls)
