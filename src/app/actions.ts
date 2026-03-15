@@ -4,9 +4,15 @@ import { updateTag } from "next/cache";
 import {
   completeGameSession,
   createGameSession,
+  createGuest,
   createGuestParticipant,
+  createRegisteredParticipant,
   deleteGameSession,
+  getGameParticipantById,
   getGameSessionById,
+  getPlayerByUsername,
+  createPlayer,
+  reassignParticipantToPlayer,
   reopenGameSession,
 } from "@/db/queries";
 import {
@@ -15,17 +21,72 @@ import {
   getLatestRound,
   recordRoll,
 } from "@/lib/game-service";
-import { gameSessionTag, ALL_GAMES_TAG } from "@/lib/cache-tags";
+import { gameSessionTag, ALL_GAMES_TAG, playerTag } from "@/lib/cache-tags";
 import { requireGameAuth, setGameAuthCookie } from "@/lib/game-auth";
+import { hashPlayerPassword, verifyPlayerPassword } from "@/lib/player-auth";
+
+const USERNAME_REGEX = /^[a-zA-Z0-9_-]+( [a-zA-Z0-9_-]+)*$/;
+const USERNAME_MAX_LENGTH = 30;
+
+export type VerifyResult =
+  | { status: "verified"; playerId: number }
+  | { status: "available" }
+  | { status: "admin_verified"; playerId: number }
+  | { status: "wrong_password" }
+  | { status: "no_password" }
+  | { status: "invalid_username" };
+
+/**
+ * Check whether a username+password pair matches an existing player,
+ * or whether the username is available for registration.
+ * Does NOT create new players — registration happens in createGameAction.
+ */
+export async function verifyOrRegisterPlayerAction(
+  username: string,
+  password: string,
+): Promise<VerifyResult> {
+  if (!password) {
+    return { status: "no_password" };
+  }
+
+  const trimmed = username.trim();
+  if (
+    !trimmed ||
+    trimmed.length > USERNAME_MAX_LENGTH ||
+    !USERNAME_REGEX.test(trimmed)
+  ) {
+    return { status: "invalid_username" };
+  }
+
+  const existingPlayer = await getPlayerByUsername(trimmed);
+
+  if (existingPlayer) {
+    const passwordMatch = await verifyPlayerPassword(
+      password,
+      existingPlayer.passwordHash,
+    );
+    if (passwordMatch) {
+      return { status: "verified", playerId: existingPlayer.id };
+    }
+
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (adminPassword && password === adminPassword) {
+      return { status: "admin_verified", playerId: existingPlayer.id };
+    }
+
+    return { status: "wrong_password" };
+  }
+
+  return { status: "available" };
+}
 
 export async function createGameAction(data: {
   name: string;
   password: string;
-  players: { name: string }[];
+  players: { name: string; playerId?: number; playerPassword?: string }[];
   randomTurnOrder: boolean;
   creationPassword?: string;
 }) {
-  // 0. Validate creation password if required
   const requiredCreationPassword = process.env.GAME_CREATION_PASSWORD;
   if (requiredCreationPassword) {
     if (data.creationPassword !== requiredCreationPassword) {
@@ -33,7 +94,6 @@ export async function createGameAction(data: {
     }
   }
 
-  // 1. Create the game session
   const session = await createGameSession({
     ownerId: "local",
     password: data.password,
@@ -43,20 +103,35 @@ export async function createGameAction(data: {
     },
   });
 
-  // 2. Create guest participants for each player
   await Promise.all(
-    data.players.map((player) =>
-      createGuestParticipant(session.id, player.name),
-    ),
+    data.players.map(async (player) => {
+      if (player.playerId != null) {
+        return createRegisteredParticipant(session.id, player.playerId);
+      }
+      if (player.playerPassword) {
+        const trimmed = player.name.trim();
+        if (trimmed && USERNAME_REGEX.test(trimmed)) {
+          const existing = await getPlayerByUsername(trimmed);
+          if (!existing) {
+            const passwordHash = await hashPlayerPassword(
+              player.playerPassword,
+            );
+            const newPlayer = await createPlayer({
+              username: trimmed,
+              passwordHash,
+            });
+            updateTag(playerTag(trimmed));
+            return createRegisteredParticipant(session.id, newPlayer.id);
+          }
+        }
+      }
+      const guest = await createGuest(player.name);
+      return createGuestParticipant(session.id, player.name, guest.id);
+    }),
   );
 
-  // 3. Create the first round (first participant starts)
   await createRound(session.id);
-
-  // 4. Set the auth cookie so the creator is immediately authenticated
   await setGameAuthCookie(session.id, data.password);
-
-  // Invalidate the all-games list cache
   updateTag(ALL_GAMES_TAG);
 
   return { id: session.id };
@@ -246,4 +321,45 @@ export async function getRawGameDataAction(gameSessionId: number) {
     player_turns: turns,
     rolls,
   };
+}
+
+/**
+ * Reassign a guest participant to a registered player (admin only).
+ * The participant's type changes from guest to registered, linking
+ * the game stats to the player's cross-game profile.
+ */
+export async function reassignGuestToPlayerAction(
+  participantId: number,
+  username: string,
+  adminPassword: string,
+): Promise<{ success: boolean; error?: string }> {
+  const expected = process.env.ADMIN_PASSWORD;
+  if (!expected || adminPassword !== expected) {
+    return { success: false, error: "Invalid admin password" };
+  }
+
+  const participant = await getGameParticipantById(participantId);
+  if (!participant) {
+    return { success: false, error: "Participant not found" };
+  }
+  if (participant.playerType !== "guest") {
+    return {
+      success: false,
+      error: "Participant is already a registered player",
+    };
+  }
+
+  const player = await getPlayerByUsername(username.trim());
+  if (!player) {
+    return {
+      success: false,
+      error: `No registered player found with username "${username.trim()}"`,
+    };
+  }
+
+  await reassignParticipantToPlayer(participantId, player.id);
+  updateTag(gameSessionTag(participant.gameSessionId));
+  updateTag(ALL_GAMES_TAG);
+
+  return { success: true };
 }

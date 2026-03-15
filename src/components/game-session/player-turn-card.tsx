@@ -35,8 +35,10 @@ import { RoundCompleteCard } from "./round-complete-card";
 import { APP_DICE_EVENT } from "./game-state-card";
 import { applyOptimisticUpdate } from "./optimistic-round";
 import type { PlayerTurnModel, RollModel, RoundModel } from "@/lib/models";
-import type { Dice, SelectGameParticipant } from "@/db/schema";
+import type { Dice } from "@/db/schema";
+import type { ParticipantWithPlayer } from "@/lib/models";
 import { formatSpecialRoll, getNameById } from "@/lib/game-helpers";
+import { PlayerName } from "@/components/player-name";
 import {
   isSafeRoll,
   violatesGentlemanRule,
@@ -327,7 +329,7 @@ interface PlayerTurnCardProps {
   gameSessionId: number;
   round: RoundModel;
   currentTurn: PlayerTurnModel | null;
-  participants: SelectGameParticipant[];
+  participants: ParticipantWithPlayer[];
   currentParticipantId: number;
 }
 
@@ -357,7 +359,6 @@ export function PlayerTurnCard({
           ),
       ) ?? currentParticipantId);
 
-  const playerName = getNameById(oCurrentParticipantId, participants);
   const isRoundComplete = optimisticRound.status === "completed";
 
   // Current dice state — the latest roll's dice
@@ -617,7 +618,11 @@ export function PlayerTurnCard({
         <CardHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <div className="flex items-center justify-between gap-2">
             <CardTitle className="text-lg sm:text-xl">
-              {playerName}&apos;s Turn
+              <PlayerName
+                participantId={oCurrentParticipantId}
+                participants={participants}
+              />
+              &apos;s Turn
             </CardTitle>
             <Badge variant="outline" className="text-xs">
               Roll {rollCount} / {optimisticRound.maxRollsAllowed}

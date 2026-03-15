@@ -3,8 +3,10 @@
 import { cacheTag, cacheLife } from "next/cache";
 import { getCompleteGame } from "@/lib/game-service";
 import { getAllGameSessions as getAllGameSessionsQuery } from "@/db/queries/gameSessions";
-import { gameSessionTag, ALL_GAMES_TAG } from "@/lib/cache-tags";
+import { getPlayerByUsername as getPlayerByUsernameQuery } from "@/db/queries";
+import { gameSessionTag, ALL_GAMES_TAG, playerTag } from "@/lib/cache-tags";
 import type { GameModel } from "@/lib/models";
+import type { SelectPlayer } from "@/db/schema";
 
 /**
  * Cached game session fetcher.
@@ -30,6 +32,12 @@ export async function getGameSession(id: number): Promise<GameModel | null> {
  * Invalidated when games are created or completed via
  * `updateTag(ALL_GAMES_TAG)`.
  */
+export async function getPlayer(username: string): Promise<SelectPlayer | null> {
+  cacheTag(playerTag(username));
+  cacheLife("default");
+  return getPlayerByUsernameQuery(username);
+}
+
 export async function getAllGames(): Promise<GameModel[]> {
   cacheTag(ALL_GAMES_TAG);
   cacheLife("default");

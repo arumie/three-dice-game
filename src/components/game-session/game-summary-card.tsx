@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { GameModel, ParticipantStats } from "@/lib/models";
-import { getNameById } from "@/lib/game-helpers";
+import { PlayerName } from "@/components/player-name";
 
 interface GameSummaryCardProps {
   session: GameModel;
@@ -64,7 +64,6 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 
   const winner = sortedStats[0];
   const loser = sortedStats[sortedStats.length - 1];
-  const winnerName = getNameById(winner.participantId, session.participants);
   const biggestDrinker = [...stats].sort(
     (a, b) => b.sipsDrunk - a.sipsDrunk,
   )[0];
@@ -256,7 +255,12 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
           <div>
             <p className="text-sm text-muted-foreground">Game Over</p>
             <h1 className="text-2xl font-bold sm:text-3xl">
-              {winnerName} wins!
+              <PlayerName
+                participantId={winner.participantId}
+                participants={session.participants}
+                linked
+              />{" "}
+              wins!
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {session.config.name}
@@ -292,7 +296,6 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
         </h3>
         <div className="flex flex-col gap-2">
           {sortedStats.map((s, idx) => {
-            const name = getNameById(s.participantId, session.participants);
             const isWinner =
               s.participantId === winner.participantId && s.roundsWon > 0;
             const isLoser =
@@ -340,7 +343,11 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
 
                 {/* Name */}
                 <span className="flex-1 truncate text-sm font-medium sm:text-base sm:font-semibold">
-                  {name}
+                  <PlayerName
+                    participantId={s.participantId}
+                    participants={session.participants}
+                    linked
+                  />
                 </span>
 
                 {/* Stats */}
@@ -429,10 +436,6 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
             <div className="grid grid-cols-2 gap-2 sm:gap-3">
               {awardDefs.map((award) => {
                 const Icon = award.icon;
-                const name = getNameById(
-                  award.participantId,
-                  session.participants,
-                );
                 return (
                   <div
                     key={award.label}
@@ -445,7 +448,11 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
                       </span>
                     </div>
                     <span className="text-sm font-bold sm:text-base">
-                      {name}{" "}
+                      <PlayerName
+                        participantId={award.participantId}
+                        participants={session.participants}
+                        linked
+                      />{" "}
                       <span className="text-xs font-normal text-muted-foreground sm:text-sm">
                         ({award.value})
                       </span>

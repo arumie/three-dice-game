@@ -215,12 +215,12 @@
 
 /* ── View Transition: slide-in-fade (enter) ── */
 ::view-transition-new(.slide-in-fade) {
-  animation: slide-in-fade-enter 250ms ease-out;
+  animation: slide-in-fade-enter 500ms ease-out;
 }
 
 /* ── View Transition: slide-out-fade (exit) ── */
 ::view-transition-old(.slide-out-fade) {
-  animation: slide-out-fade-exit 200ms ease-in;
+  animation: slide-out-fade-exit 500ms ease-in;
 }
 
 @keyframes slide-in-fade-enter {
@@ -241,7 +241,7 @@
   }
   to {
     opacity: 0;
-    translate: 0 -8px;
+    translate: 0 -140px;
   }
 }
 

@@ -1,10 +1,20 @@
-import type { GameModel, ParticipantStats, RoundModel } from "./models";
-import type { SelectGameParticipant } from "@/db/schema";
+import type {
+  AggregatedPlayerStats,
+  GameModel,
+  ParticipantStats,
+  ParticipantWithPlayer,
+  RoundModel,
+} from "./models";
 
 /**
- * Get a participant's display name
+ * Get a participant's display name.
+ * For registered players, returns the player's username.
+ * For guests, returns the guest name.
  */
-export function getParticipantName(participant: SelectGameParticipant): string {
+export function getParticipantName(participant: ParticipantWithPlayer): string {
+  if (participant.playerType === "registered" && participant.playerUsername) {
+    return participant.playerUsername;
+  }
   return participant.guestName ?? `Player ${participant.id}`;
 }
 
@@ -13,10 +23,89 @@ export function getParticipantName(participant: SelectGameParticipant): string {
  */
 export function getNameById(
   participantId: number,
-  participants: SelectGameParticipant[],
+  participants: ParticipantWithPlayer[],
 ): string {
   const p = participants.find((p) => p.id === participantId);
   return p ? getParticipantName(p) : `Unknown`;
+}
+
+/**
+ * Get the username for a participant (only for registered players).
+ * Returns null for guests.
+ */
+export function getUsernameById(
+  participantId: number,
+  participants: ParticipantWithPlayer[],
+): string | null {
+  const p = participants.find((p) => p.id === participantId);
+  if (!p || p.playerType !== "registered") return null;
+  return p.playerUsername ?? null;
+}
+
+/**
+ * Build a unique aggregation key for a participant.
+ * Registered players: "player:{playerId}" (cross-game identity)
+ * Guests: "guest:{guestId}" or "guest-name:{guestName}" (per-game identity)
+ */
+export function getAggregationKey(participant: ParticipantWithPlayer): string {
+  if (participant.playerType === "registered" && participant.playerId != null) {
+    return `player:${participant.playerId}`;
+  }
+  if (participant.guestId != null) {
+    return `guest:${participant.guestId}`;
+  }
+  return `guest-name:${participant.guestName ?? participant.id}`;
+}
+
+/**
+ * Create an empty AggregatedPlayerStats object
+ */
+export function emptyAggregatedStats(
+  name: string,
+  username: string | null,
+): AggregatedPlayerStats {
+  return {
+    name,
+    username,
+    gamesPlayed: 0,
+    gamesWon: 0,
+    roundsWon: 0,
+    roundsLost: 0,
+    sipsDrunk: 0,
+    sipsAwarded: 0,
+    sipsReceived: 0,
+    threeOfAKindCount: 0,
+    stairsCount: 0,
+    superStairsCount: 0,
+    shitStairsCount: 0,
+    lowestScoreCount: 0,
+    lowestScoreSipsDrunk: 0,
+    tiebreakerWins: 0,
+  };
+}
+
+/**
+ * Accumulate a single game's ParticipantStats into an AggregatedPlayerStats
+ */
+export function accumulateStats(
+  existing: AggregatedPlayerStats,
+  s: ParticipantStats,
+  isWinner: boolean,
+): void {
+  existing.gamesPlayed += 1;
+  if (isWinner) existing.gamesWon += 1;
+  existing.roundsWon += s.roundsWon;
+  existing.roundsLost += s.roundsLost;
+  existing.sipsDrunk += s.sipsDrunk;
+  existing.sipsAwarded += s.sipsAwarded;
+  existing.sipsReceived += s.sipsReceived;
+  existing.threeOfAKindCount += s.threeOfAKindCount;
+  existing.stairsCount += s.stairsCount;
+  existing.superStairsCount += s.superStairsCount;
+  existing.shitStairsCount += s.shitStairsCount;
+  existing.lowestScoreCount += s.lowestScoreCount;
+  existing.lowestScoreSipsDrunk += s.lowestScoreSipsDrunk;
+  existing.tiebreakerWins += s.tiebreakerWins;
 }
 
 /**

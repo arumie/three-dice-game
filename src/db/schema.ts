@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   index,
   integer,
@@ -8,6 +9,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
 
@@ -23,11 +25,23 @@ export const specialRollTypeEnum = pgEnum("special_roll_type", [
 ]);
 
 // Players table - for registered players
-export const playersTable = pgTable("players", {
+export const playersTable = pgTable(
+  "players",
+  {
+    id: serial("id").primaryKey(),
+    username: varchar("username", { length: 30 }).notNull(),
+    passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("players_username_lower_idx").on(sql`lower(${t.username})`),
+  ],
+);
+
+// Guests table - each guest gets a unique ID per game
+export const guestsTable = pgTable("guests", {
   id: serial("id").primaryKey(),
-  userId: text("user_id").notNull().unique(),
-  username: varchar("username", { length: 50 }).notNull().unique(),
-  displayName: varchar("display_name", { length: 100 }),
+  name: varchar("name", { length: 50 }).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -56,6 +70,7 @@ export const gameParticipantsTable = pgTable(
       .notNull()
       .references(() => gameSessionsTable.id, { onDelete: "cascade" }),
     playerId: integer("player_id").references(() => playersTable.id),
+    guestId: integer("guest_id").references(() => guestsTable.id),
     playerType: playerTypeEnum("player_type").notNull(),
     guestName: varchar("guest_name", { length: 50 }),
     joinedAt: timestamp("joined_at").notNull().defaultNow(),
@@ -143,6 +158,7 @@ export type SpecialRollType =
   | "none";
 
 export type InsertPlayer = typeof playersTable.$inferInsert;
+export type InsertGuest = typeof guestsTable.$inferInsert;
 export type InsertGameSession = typeof gameSessionsTable.$inferInsert;
 export type InsertGameParticipant = typeof gameParticipantsTable.$inferInsert;
 export type InsertRound = typeof roundsTable.$inferInsert;
@@ -150,6 +166,7 @@ export type InsertPlayerTurn = typeof playerTurnsTable.$inferInsert;
 export type InsertRoll = typeof rollsTable.$inferInsert;
 
 export type SelectPlayer = typeof playersTable.$inferSelect;
+export type SelectGuest = typeof guestsTable.$inferSelect;
 export type SelectGameSession = typeof gameSessionsTable.$inferSelect;
 export type SelectGameParticipant = typeof gameParticipantsTable.$inferSelect;
 export type SelectRound = typeof roundsTable.$inferSelect;

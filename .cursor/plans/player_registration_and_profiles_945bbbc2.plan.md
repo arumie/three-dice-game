@@ -4,40 +4,40 @@ overview: Add player registration and profiles with cross-game stats. Registrati
 todos:
   - id: schema
     content: Modify playersTable (add passwordHash, remove userId/displayName), add guestsTable, add guestId FK to gameParticipantsTable. Run drizzle-kit push.
-    status: pending
+    status: completed
   - id: guest-migration
     content: "Write a migration script: for each guest participant row, create a guest record and backfill guestId on game_participants."
-    status: pending
+    status: completed
   - id: player-queries
     content: "Update src/db/queries/players.ts: remove getPlayerByUserId, make getPlayerByUsername case-insensitive, update createPlayer signature."
-    status: pending
+    status: completed
   - id: guest-queries
     content: Create src/db/queries/guests.ts with createGuest and getGuestById.
-    status: pending
+    status: completed
   - id: player-auth
-    content: Create src/lib/player-auth.ts with hashPlayerPassword and verifyPlayerPassword.
-    status: pending
+    content: Create src/lib/player-auth.ts using Bun.password (argon2id) with PEPPER_SECRET env var for hashPlayerPassword and verifyPlayerPassword.
+    status: completed
   - id: verify-action
     content: Add verifyOrRegisterPlayerAction(username, password) server action with admin password fallback.
-    status: pending
+    status: completed
   - id: new-game-form
     content: "Rework new-game-form.tsx: add password field per player, inline verify/register flow with status indicators, trigger on Enter/blur."
-    status: pending
+    status: completed
   - id: create-game-action
     content: "Update createGameAction: use playerId for registered players, use createGuest + guestId for guests."
-    status: pending
+    status: completed
   - id: display-names
     content: Add left join on playersTable in game fetch query; create extended ParticipantWithPlayer type; update getParticipantName.
-    status: pending
+    status: completed
   - id: stats-helper
     content: Refactor stats aggregation in /games page to key by playerId/guestId instead of name strings; extract reusable helper.
-    status: pending
+    status: completed
   - id: profile-page
     content: "Create /player/[username] profile page: reuse cached getAllGames(), filter to player's games, aggregate and display stats."
-    status: pending
+    status: completed
   - id: profile-links
     content: Add profile links for registered players in game summary card, GlobalStatsCard, and game state card.
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -196,8 +196,14 @@ Update `createGuestParticipant` in [src/db/queries/gameParticipants.ts](src/db/q
 
 **New file: [src/lib/player-auth.ts](src/lib/player-auth.ts)**:
 
-- `hashPlayerPassword(password)` -- SHA-256 hex hash (consistent with existing `game-auth.ts` pattern)
-- `verifyPlayerPassword(password, hash)` -- hash and compare
+Uses `Bun.password` (argon2id by default, automatic per-password salting, salt embedded in the hash string) with a **pepper** (server-side secret from env var `PEPPER_SECRET`):
+
+- `hashPlayerPassword(password)` -- prepends the pepper to the password, then calls `await Bun.password.hash(pepper + password)`. Returns a PHC-format string like `$argon2id$v=19$m=65536,t=2,p=1$<salt>$<hash>`.
+- `verifyPlayerPassword(password, hash)` -- prepends the same pepper, then calls `await Bun.password.verify(pepper + password, hash)`.
+
+The pepper is read from `process.env.PEPPER_SECRET`. If not set, fall back to an empty string (with a dev-mode warning). This means even if the DB is stolen, the attacker also needs the server secret to brute-force passwords. The full salt+hash fits in `varchar(255)`.
+
+Add `PEPPER_SECRET` to `.env.example` with a placeholder value.
 
 ## Display Name Resolution (Option A -- Eager Join)
 

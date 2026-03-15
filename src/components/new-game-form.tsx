@@ -1,8 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, Eye, EyeOff } from "lucide-react";
+import {
+  Plus,
+  X,
+  Eye,
+  EyeOff,
+  Check,
+  AlertCircle,
+  UserPlus,
+  Loader2,
+  ShieldCheck,
+} from "lucide-react";
 import { ThreeDiceLogo } from "@/components/three-dice-logo";
 import { useFieldArray, useForm } from "react-hook-form";
 import { z } from "zod/v4";
@@ -36,12 +46,18 @@ import {
 } from "@/components/ui/form";
 
 import { DiceLoading } from "@/components/dice-loading";
-import { createGameAction } from "@/app/actions";
+import {
+  createGameAction,
+  verifyOrRegisterPlayerAction,
+  type VerifyResult,
+} from "@/app/actions";
 import { toast } from "sonner";
 
 const MIN_PLAYERS = 3;
 const MAX_PLAYERS = 20;
 const MIN_LOADING_MS = 2000;
+
+const USERNAME_REGEX = /^[a-zA-Z0-9_-]+$/;
 
 const newGameSchema = z.object({
   name: z.string().min(1, "Game name is required").max(100),
@@ -50,7 +66,23 @@ const newGameSchema = z.object({
   players: z
     .array(
       z.object({
-        name: z.string().min(1, "Player name is required").max(50),
+        name: z
+          .string()
+          .min(1, "Player name is required")
+          .max(30, "Player name must be 30 characters or less"),
+        playerPassword: z.string().max(100).optional(),
+        playerId: z.number().optional(),
+        verifyStatus: z
+          .enum([
+            "idle",
+            "verifying",
+            "verified",
+            "available",
+            "admin_verified",
+            "wrong_password",
+            "invalid_username",
+          ])
+          .optional(),
       }),
     )
     .min(MIN_PLAYERS, `At least ${MIN_PLAYERS} players are required`)
@@ -63,6 +95,15 @@ const newGameSchema = z.object({
         return new Set(names).size === names.length;
       },
       { message: "Player names must be unique" },
+    )
+    .refine(
+      (players) => {
+        const ids = players
+          .map((p) => p.playerId)
+          .filter((id): id is number => id != null);
+        return new Set(ids).size === ids.length;
+      },
+      { message: "A registered player can only appear once per game" },
     ),
   randomTurnOrder: z.boolean(),
 });
@@ -71,10 +112,52 @@ type NewGameFormValues = z.infer<typeof newGameSchema>;
 
 const DEFAULT_PLAYERS = Array.from({ length: MIN_PLAYERS }, () => ({
   name: "",
+  playerPassword: "",
+  playerId: undefined as number | undefined,
+  verifyStatus: "idle" as const,
 }));
 
 interface NewGameFormProps {
   requiresCreationPassword?: boolean;
+}
+
+type PlayerVerifyStatus = NonNullable<
+  NewGameFormValues["players"][number]["verifyStatus"]
+>;
+
+function VerifyIndicator({ status }: { status: PlayerVerifyStatus }) {
+  let content: React.ReactNode = null;
+
+  switch (status) {
+    case "verifying":
+      content = (
+        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      );
+      break;
+    case "verified":
+      content = <Check className="size-4 text-green-600 dark:text-green-400" />;
+      break;
+    case "admin_verified":
+      content = (
+        <ShieldCheck className="size-4 text-green-600 dark:text-green-400" />
+      );
+      break;
+    case "available":
+      content = (
+        <UserPlus className="size-4 text-blue-600 dark:text-blue-400" />
+      );
+      break;
+    case "wrong_password":
+    case "invalid_username":
+      content = <AlertCircle className="size-4 text-destructive" />;
+      break;
+  }
+
+  return (
+    <span className="flex size-4 shrink-0 items-center justify-center">
+      {content}
+    </span>
+  );
 }
 
 export function NewGameForm({
@@ -84,8 +167,10 @@ export function NewGameForm({
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showCreationPassword, setShowCreationPassword] = useState(false);
+  const [showPlayerPasswords, setShowPlayerPasswords] = useState<
+    Record<number, boolean>
+  >({});
 
-  // Reset loading state when returning to this page (e.g. browser back)
   useEffect(() => {
     setIsLoading(false);
   }, []);
@@ -106,6 +191,73 @@ export function NewGameForm({
     name: "players",
   });
 
+  const verifyPlayer = useCallback(
+    async (index: number) => {
+      const name = form.getValues(`players.${index}.name`).trim();
+      const pw = form.getValues(`players.${index}.playerPassword`) ?? "";
+
+      if (!name || !pw) return;
+
+      form.setValue(`players.${index}.verifyStatus`, "verifying");
+      form.setValue(`players.${index}.playerId`, undefined);
+
+      try {
+        const result = await verifyOrRegisterPlayerAction(name, pw);
+
+        form.setValue(
+          `players.${index}.verifyStatus`,
+          result.status as PlayerVerifyStatus,
+        );
+
+        if ("playerId" in result) {
+          form.setValue(`players.${index}.playerId`, result.playerId);
+        }
+
+        if (result.status === "wrong_password") {
+          toast.error(`Wrong password for "${name}"`);
+        } else if (result.status === "available") {
+          toast.success(`"${name}" will be registered when the game starts`);
+        } else if (result.status === "invalid_username") {
+          toast.error(
+            "Username can only contain letters, digits, spaces, hyphens and underscores",
+          );
+        }
+      } catch {
+        form.setValue(`players.${index}.verifyStatus`, "idle");
+        toast.error("Verification failed. Please try again.");
+      }
+    },
+    [form],
+  );
+
+  const handlePlayerFieldEvent = useCallback(
+    (index: number, event: React.KeyboardEvent | React.FocusEvent) => {
+      if (event.type === "keydown") {
+        const ke = event as React.KeyboardEvent;
+        if (ke.key !== "Enter") return;
+        ke.preventDefault();
+      }
+
+      const name = form.getValues(`players.${index}.name`).trim();
+      const pw = form.getValues(`players.${index}.playerPassword`) ?? "";
+      if (name && pw) {
+        verifyPlayer(index);
+      }
+    },
+    [form, verifyPlayer],
+  );
+
+  const resetVerification = useCallback(
+    (index: number) => {
+      const current = form.getValues(`players.${index}.verifyStatus`);
+      if (current !== "idle" && current !== "verifying") {
+        form.setValue(`players.${index}.verifyStatus`, "idle");
+        form.setValue(`players.${index}.playerId`, undefined);
+      }
+    },
+    [form],
+  );
+
   const onSubmit = useCallback(
     async (values: NewGameFormValues) => {
       setIsLoading(true);
@@ -114,14 +266,18 @@ export function NewGameForm({
           createGameAction({
             name: values.name,
             password: values.password,
-            players: values.players,
+            players: values.players.map((p) => ({
+              name: p.name.trim(),
+              playerId: p.playerId,
+              playerPassword:
+                p.verifyStatus === "available" ? p.playerPassword : undefined,
+            })),
             randomTurnOrder: values.randomTurnOrder,
             creationPassword: values.creationPassword,
           }),
           new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS)),
         ]);
 
-        // Keep loading state active — component will unmount on navigation
         router.push(`/game-session/${result.id}`);
       } catch {
         setIsLoading(false);
@@ -226,7 +382,14 @@ export function NewGameForm({
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => append({ name: "" })}
+                          onClick={() =>
+                            append({
+                              name: "",
+                              playerPassword: "",
+                              playerId: undefined,
+                              verifyStatus: "idle",
+                            })
+                          }
                         >
                           <Plus className="size-4" />
                           Add Player
@@ -234,42 +397,123 @@ export function NewGameForm({
                       )}
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                      {fields.map((field, index) => (
-                        <FormField
-                          key={field.id}
-                          control={form.control}
-                          name={`players.${index}.name`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <div className="flex items-center gap-2">
-                                <FormControl>
-                                  <Input
-                                    placeholder={`Player ${index + 1}`}
-                                    autoComplete="off"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                {canRemove && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-9 shrink-0 text-muted-foreground hover:text-destructive"
-                                    onClick={() => remove(index)}
-                                  >
-                                    <X className="size-4" />
-                                    <span className="sr-only">
-                                      Remove player {index + 1}
-                                    </span>
-                                  </Button>
-                                )}
+                    <div className="flex flex-col gap-3">
+                      {fields.map((field, index) => {
+                        const verifyStatus =
+                          form.watch(`players.${index}.verifyStatus`) ?? "idle";
+                        const showPw = showPlayerPasswords[index] ?? false;
+
+                        return (
+                          <div key={field.id} className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                              <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row">
+                                <FormField
+                                  control={form.control}
+                                  name={`players.${index}.name`}
+                                  render={({ field: nameField }) => (
+                                    <FormItem className="flex-1">
+                                      <FormControl>
+                                        <Input
+                                          placeholder={`Player ${index + 1}`}
+                                          autoComplete="off"
+                                          maxLength={30}
+                                          {...nameField}
+                                          onChange={(e) => {
+                                            nameField.onChange(e);
+                                            resetVerification(index);
+                                          }}
+                                          onBlur={(e) => {
+                                            nameField.onBlur();
+                                            handlePlayerFieldEvent(index, e);
+                                          }}
+                                          onKeyDown={(e) =>
+                                            handlePlayerFieldEvent(index, e)
+                                          }
+                                        />
+                                      </FormControl>
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                                <FormField
+                                  control={form.control}
+                                  name={`players.${index}.playerPassword`}
+                                  render={({ field: pwField }) => (
+                                    <FormItem className="flex-1">
+                                      <InputGroup>
+                                        <FormControl>
+                                          <InputGroupInput
+                                            type={showPw ? "text" : "password"}
+                                            placeholder="Password (optional)"
+                                            autoComplete="off"
+                                            {...pwField}
+                                            onChange={(e) => {
+                                              pwField.onChange(e);
+                                              resetVerification(index);
+                                            }}
+                                            onBlur={(e) => {
+                                              pwField.onBlur();
+                                              handlePlayerFieldEvent(index, e);
+                                            }}
+                                            onKeyDown={(e) =>
+                                              handlePlayerFieldEvent(index, e)
+                                            }
+                                          />
+                                        </FormControl>
+                                        <InputGroupAddon align="inline-end">
+                                          <InputGroupButton
+                                            size="icon-xs"
+                                            onClick={() =>
+                                              setShowPlayerPasswords(
+                                                (prev) => ({
+                                                  ...prev,
+                                                  [index]: !prev[index],
+                                                }),
+                                              )
+                                            }
+                                          >
+                                            {showPw ? (
+                                              <EyeOff className="size-3.5" />
+                                            ) : (
+                                              <Eye className="size-3.5" />
+                                            )}
+                                          </InputGroupButton>
+                                        </InputGroupAddon>
+                                      </InputGroup>
+                                    </FormItem>
+                                  )}
+                                />
                               </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ))}
+                              <VerifyIndicator status={verifyStatus} />
+                              {canRemove && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-9 shrink-0 text-muted-foreground hover:text-destructive"
+                                  onClick={() => remove(index)}
+                                >
+                                  <X className="size-4" />
+                                  <span className="sr-only">
+                                    Remove player {index + 1}
+                                  </span>
+                                </Button>
+                              )}
+                            </div>
+                            {verifyStatus === "wrong_password" && (
+                              <p className="text-xs text-destructive">
+                                Wrong password for this player
+                              </p>
+                            )}
+                            {verifyStatus === "invalid_username" && (
+                              <p className="text-xs text-destructive">
+                                Only letters, digits, hyphens and underscores
+                                allowed
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {form.formState.errors.players?.root && (
@@ -278,11 +522,14 @@ export function NewGameForm({
                       </p>
                     )}
 
-                    {canAdd && (
-                      <p className="text-xs text-muted-foreground">
-                        {MIN_PLAYERS}&ndash;{MAX_PLAYERS} players allowed
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Leave password empty for guest players.{" "}
+                      {canAdd && (
+                        <>
+                          {MIN_PLAYERS}&ndash;{MAX_PLAYERS} players allowed.
+                        </>
+                      )}
+                    </p>
                   </div>
 
                   <FormField

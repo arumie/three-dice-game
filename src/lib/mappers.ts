@@ -1,5 +1,4 @@
 import type {
-  SelectGameParticipant,
   SelectGameSession,
   SelectPlayerTurn,
   SelectRoll,
@@ -16,6 +15,7 @@ import {
 } from "./game-utils";
 import type {
   GameModel,
+  ParticipantWithPlayer,
   PlayerTurnModel,
   RollModel,
   RoundModel,
@@ -192,7 +192,7 @@ export function mapRound(
  */
 export function mapGame(
   session: SelectGameSession,
-  participants: SelectGameParticipant[],
+  participants: ParticipantWithPlayer[],
   rounds: SelectRound[],
   turnsByRoundId: Map<number, SelectPlayerTurn[]>,
   rollsByTurnId: Map<number, SelectRoll[]>,

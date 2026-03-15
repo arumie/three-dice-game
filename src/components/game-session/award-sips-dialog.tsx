@@ -12,14 +12,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import type { SelectGameParticipant } from "@/db/schema";
+import type { ParticipantWithPlayer } from "@/lib/models";
 import { getParticipantName } from "@/lib/game-helpers";
+import { PlayerName } from "@/components/player-name";
 
 interface AwardSipsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sipsToAward: number;
-  participants: SelectGameParticipant[];
+  participants: ParticipantWithPlayer[];
   currentParticipantId: number;
   onConfirm: (targetParticipantId: number) => void;
 }
@@ -87,7 +88,9 @@ export function AwardSipsDialog({
                 >
                   {name.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm font-medium">{name}</span>
+                <span className="text-sm font-medium">
+                  <PlayerName participant={p} />
+                </span>
               </button>
             );
           })}

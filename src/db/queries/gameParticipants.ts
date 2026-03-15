@@ -40,10 +40,12 @@ export async function createRegisteredParticipant(
 export async function createGuestParticipant(
   gameSessionId: number,
   guestName: string,
+  guestId?: number,
 ): Promise<SelectGameParticipant> {
   return createGameParticipant({
     gameSessionId,
     playerId: null,
+    guestId: guestId ?? null,
     playerType: "guest",
     guestName,
   });
@@ -94,6 +96,27 @@ export async function getGameParticipant(
     )
     .limit(1);
   return participant || null;
+}
+
+/**
+ * Reassign a guest participant to a registered player.
+ * Updates playerType, playerId, and clears guestId/guestName.
+ */
+export async function reassignParticipantToPlayer(
+  participantId: number,
+  playerId: number,
+): Promise<SelectGameParticipant | null> {
+  const [updated] = await db
+    .update(gameParticipantsTable)
+    .set({
+      playerId,
+      playerType: "registered",
+      guestId: null,
+      guestName: null,
+    })
+    .where(eq(gameParticipantsTable.id, participantId))
+    .returning();
+  return updated || null;
 }
 
 /**

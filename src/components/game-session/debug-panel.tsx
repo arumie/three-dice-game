@@ -11,10 +11,12 @@ import {
   ChevronRight,
   Trash2,
   RotateCcw,
+  UserRoundPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,12 +28,22 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   invalidateCacheAction,
   getRawGameDataAction,
   deleteGameSessionAction,
   reopenGameSessionAction,
+  reassignGuestToPlayerAction,
 } from "@/app/actions";
-import type { GameModel } from "@/lib/models";
+import type { GameModel, ParticipantWithPlayer } from "@/lib/models";
+import { getParticipantName } from "@/lib/game-helpers";
 
 interface DebugPanelProps {
   session: GameModel;
@@ -50,7 +62,16 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
   const [reopenOpen, setReopenOpen] = useState(false);
   const [reopenPassword, setReopenPassword] = useState("");
   const [reopenError, setReopenError] = useState<string | null>(null);
+  const [reassignOpen, setReassignOpen] = useState(false);
+  const [reassignParticipant, setReassignParticipant] =
+    useState<ParticipantWithPlayer | null>(null);
+  const [reassignUsername, setReassignUsername] = useState("");
+  const [reassignPassword, setReassignPassword] = useState("");
+  const [reassignError, setReassignError] = useState<string | null>(null);
   const isCompleted = session.status === "completed";
+  const guestParticipants = session.participants.filter(
+    (p) => p.playerType === "guest",
+  );
 
   function handleCopyState() {
     const json = JSON.stringify(session, null, 2);
@@ -104,6 +125,34 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
         router.push(`/game-session/${gameSessionId}`);
       } else {
         setReopenError(result.error ?? "Something went wrong");
+      }
+    });
+  }
+
+  function openReassignDialog(participant: ParticipantWithPlayer) {
+    setReassignParticipant(participant);
+    setReassignUsername("");
+    setReassignPassword("");
+    setReassignError(null);
+    setReassignOpen(true);
+  }
+
+  function handleReassignGuest() {
+    if (!reassignParticipant) return;
+    startTransition(async () => {
+      const result = await reassignGuestToPlayerAction(
+        reassignParticipant.id,
+        reassignUsername,
+        reassignPassword,
+      );
+      if (result.success) {
+        setReassignOpen(false);
+        toast.success(
+          `"${getParticipantName(reassignParticipant)}" reassigned to ${reassignUsername}`,
+        );
+        router.refresh();
+      } else {
+        setReassignError(result.error ?? "Something went wrong");
       }
     });
   }
@@ -187,6 +236,18 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
             >
               <RotateCcw className="size-3" />
               Reopen
+            </Button>
+          )}
+          {guestParticipants.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 px-2 text-xs text-blue-600 hover:text-blue-600"
+              disabled={isPending}
+              onClick={() => openReassignDialog(guestParticipants[0])}
+            >
+              <UserRoundPlus className="size-3" />
+              Reassign
             </Button>
           )}
         </div>
@@ -283,6 +344,116 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog
+        open={reassignOpen}
+        onOpenChange={(v) => {
+          setReassignOpen(v);
+          if (!v) {
+            setReassignParticipant(null);
+            setReassignUsername("");
+            setReassignPassword("");
+            setReassignError(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reassign guest to player</DialogTitle>
+            <DialogDescription>
+              Link a guest participant to a registered player account. Their
+              game stats will be attributed to that player.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="reassign-guest" className="text-sm font-medium">
+                Guest
+              </Label>
+              <div className="flex flex-wrap gap-1.5">
+                {guestParticipants.map((p) => (
+                  <Button
+                    key={p.id}
+                    type="button"
+                    variant={
+                      reassignParticipant?.id === p.id ? "default" : "outline"
+                    }
+                    size="sm"
+                    className="h-7 px-2.5 text-xs"
+                    onClick={() => {
+                      setReassignParticipant(p);
+                      setReassignError(null);
+                    }}
+                  >
+                    {getParticipantName(p)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label
+                htmlFor="reassign-username"
+                className="text-sm font-medium"
+              >
+                Registered player username
+              </Label>
+              <Input
+                id="reassign-username"
+                placeholder="Username"
+                value={reassignUsername}
+                onChange={(e) => {
+                  setReassignUsername(e.target.value);
+                  setReassignError(null);
+                }}
+                autoComplete="off"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Label
+                htmlFor="reassign-admin-password"
+                className="text-sm font-medium"
+              >
+                Admin password
+              </Label>
+              <Input
+                id="reassign-admin-password"
+                type="password"
+                placeholder="Admin password"
+                value={reassignPassword}
+                onChange={(e) => {
+                  setReassignPassword(e.target.value);
+                  setReassignError(null);
+                }}
+                autoComplete="off"
+              />
+            </div>
+
+            {reassignError && (
+              <p className="text-sm text-destructive">{reassignError}</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReassignOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={
+                isPending ||
+                !reassignParticipant ||
+                !reassignUsername.trim() ||
+                !reassignPassword
+              }
+              onClick={handleReassignGuest}
+            >
+              {isPending ? "Reassigning…" : "Reassign"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

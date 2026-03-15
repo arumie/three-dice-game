@@ -12,3 +12,11 @@ export function gameSessionTag(id: number): string {
  * Invalidated when games are created or completed.
  */
 export const ALL_GAMES_TAG = "all-games";
+
+/**
+ * Cache tag for a player profile lookup by username.
+ * Invalidated when a new player is created.
+ */
+export function playerTag(username: string): string {
+  return `player-${username.toLowerCase()}`;
+}

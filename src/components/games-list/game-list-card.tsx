@@ -14,11 +14,8 @@ import {
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { GameModel, ParticipantStats } from "@/lib/models";
-import {
-  getNameById,
-  getStatusVariant,
-  formatStatus,
-} from "@/lib/game-helpers";
+import { getStatusVariant, formatStatus } from "@/lib/game-helpers";
+import { PlayerName } from "@/components/player-name";
 
 interface GameListCardProps {
   session: GameModel;
@@ -112,7 +109,6 @@ export function GameListCard({ session, stats }: GameListCardProps) {
         <CardContent className="px-4 pb-4 pt-1 sm:px-5">
           <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
             {sortedStats.map((s, idx) => {
-              const name = getNameById(s.participantId, session.participants);
               const isLeader =
                 s.participantId === leader?.participantId && s.roundsWon > 0;
               const isTrailer =
@@ -157,7 +153,10 @@ export function GameListCard({ session, stats }: GameListCardProps) {
 
                   {/* Name */}
                   <span className="min-w-16 flex-1 truncate font-semibold sm:min-w-20">
-                    {name}
+                    <PlayerName
+                      participantId={s.participantId}
+                      participants={session.participants}
+                    />
                   </span>
 
                   {/* Stats */}

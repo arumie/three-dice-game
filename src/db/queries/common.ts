@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, getTableColumns } from "drizzle-orm";
 import { db } from "..";
 import {
   gameParticipantsTable,
@@ -9,18 +9,18 @@ import {
   roundsTable,
   type SelectGameParticipant,
   type SelectGameSession,
-  type SelectPlayer,
   type SelectPlayerTurn,
   type SelectRoll,
   type SelectRound,
 } from "../schema";
+import type { ParticipantWithPlayer } from "@/lib/models";
 
 /**
  * Full game state with all related data
  */
 export interface FullGameState {
   session: SelectGameSession;
-  participants: SelectGameParticipant[];
+  participants: ParticipantWithPlayer[];
   rounds: SelectRound[];
   turns: SelectPlayerTurn[];
   rolls: SelectRoll[];
@@ -34,15 +34,22 @@ export async function getFullGameState(
   gameSessionId: number,
 ): Promise<FullGameState | null> {
   // Fetch all data in parallel
-  const [sessions, participants, rounds, turns, rolls] = await Promise.all([
+  const [sessions, participantRows, rounds, turns, rolls] = await Promise.all([
     db
       .select()
       .from(gameSessionsTable)
       .where(eq(gameSessionsTable.id, gameSessionId))
       .limit(1),
     db
-      .select()
+      .select({
+        ...getTableColumns(gameParticipantsTable),
+        playerUsername: playersTable.username,
+      })
       .from(gameParticipantsTable)
+      .leftJoin(
+        playersTable,
+        eq(gameParticipantsTable.playerId, playersTable.id),
+      )
       .where(eq(gameParticipantsTable.gameSessionId, gameSessionId))
       .orderBy(gameParticipantsTable.joinedAt),
     db
@@ -66,7 +73,7 @@ export async function getFullGameState(
 
   return {
     session: sessions[0],
-    participants,
+    participants: participantRows,
     rounds,
     turns,
     rolls,
@@ -165,89 +172,6 @@ export async function getLatestFullRound(
   }
 
   return getFullRound(latestRound.id);
-}
-
-/**
- * Participant with player details (for registered players)
- */
-export interface ParticipantWithPlayer {
-  participant: SelectGameParticipant;
-  player: SelectPlayer | null;
-}
-
-/**
- * Get all participants for a game with their player details
- */
-export async function getParticipantsWithPlayers(
-  gameSessionId: number,
-): Promise<ParticipantWithPlayer[]> {
-  const participants = await db
-    .select()
-    .from(gameParticipantsTable)
-    .where(eq(gameParticipantsTable.gameSessionId, gameSessionId))
-    .orderBy(gameParticipantsTable.joinedAt);
-
-  // Get all unique player IDs
-  const playerIds = participants
-    .map((p) => p.playerId)
-    .filter((id): id is number => id !== null);
-
-  if (playerIds.length === 0) {
-    return participants.map((participant) => ({
-      participant,
-      player: null,
-    }));
-  }
-
-  // Fetch all players at once
-  const players = await db
-    .select()
-    .from(playersTable)
-    .where(
-      // Use IN clause for batch fetch
-      playerIds.length > 0 ? eq(playersTable.id, playerIds[0]) : undefined,
-    );
-
-  const playerMap = new Map(players.map((p) => [p.id, p]));
-
-  return participants.map((participant) => ({
-    participant,
-    player: participant.playerId
-      ? playerMap.get(participant.playerId) || null
-      : null,
-  }));
-}
-
-/**
- * Game session with participant details
- */
-export interface GameWithParticipants {
-  session: SelectGameSession;
-  participants: ParticipantWithPlayer[];
-}
-
-/**
- * Get a game session with all participants and their details
- */
-export async function getGameWithParticipants(
-  gameSessionId: number,
-): Promise<GameWithParticipants | null> {
-  const [session] = await db
-    .select()
-    .from(gameSessionsTable)
-    .where(eq(gameSessionsTable.id, gameSessionId))
-    .limit(1);
-
-  if (!session) {
-    return null;
-  }
-
-  const participants = await getParticipantsWithPlayers(gameSessionId);
-
-  return {
-    session,
-    participants,
-  };
 }
 
 /**

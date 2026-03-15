@@ -1,5 +1,12 @@
 import { getAllGames } from "@/lib/cached-queries";
-import { computeParticipantStats, getNameById } from "@/lib/game-helpers";
+import {
+  accumulateStats,
+  computeParticipantStats,
+  emptyAggregatedStats,
+  getAggregationKey,
+  getParticipantName,
+  getUsernameById,
+} from "@/lib/game-helpers";
 import {
   GlobalStatsCard,
   type GlobalStats,
@@ -16,7 +23,6 @@ export default async function GamesPage() {
     stats: computeParticipantStats(session),
   }));
 
-  // Aggregate global stats
   const globalStats: GlobalStats = {
     totalGames: games.length,
     inProgressGames: games.filter((g) => g.status === "in_progress").length,
@@ -33,11 +39,9 @@ export default async function GamesPage() {
     totalLowestScores: 0,
   };
 
-  // Aggregate per-player stats across all games (keyed by guest name)
   const playerStatsMap = new Map<string, AggregatedPlayerStats>();
 
   for (const { session, stats } of gameData) {
-    // Determine winner of this completed game
     const sortedForWinner = [...stats].sort((a, b) => {
       if (b.roundsWon !== a.roundsWon) return b.roundsWon - a.roundsWon;
       return a.sipsDrunk - b.sipsDrunk;
@@ -53,41 +57,18 @@ export default async function GamesPage() {
       globalStats.totalShitStairs += s.shitStairsCount;
       globalStats.totalLowestScores += s.lowestScoreCount;
 
-      const name = getNameById(s.participantId, session.participants);
-      const existing = playerStatsMap.get(name) ?? {
-        name,
-        gamesPlayed: 0,
-        gamesWon: 0,
-        roundsWon: 0,
-        roundsLost: 0,
-        sipsDrunk: 0,
-        sipsAwarded: 0,
-        sipsReceived: 0,
-        threeOfAKindCount: 0,
-        stairsCount: 0,
-        superStairsCount: 0,
-        shitStairsCount: 0,
-        lowestScoreCount: 0,
-        lowestScoreSipsDrunk: 0,
-        tiebreakerWins: 0,
-      };
-      existing.gamesPlayed += 1;
-      if (winnerId != null && s.participantId === winnerId) {
-        existing.gamesWon += 1;
-      }
-      existing.roundsWon += s.roundsWon;
-      existing.roundsLost += s.roundsLost;
-      existing.sipsDrunk += s.sipsDrunk;
-      existing.sipsAwarded += s.sipsAwarded;
-      existing.sipsReceived += s.sipsReceived;
-      existing.threeOfAKindCount += s.threeOfAKindCount;
-      existing.stairsCount += s.stairsCount;
-      existing.superStairsCount += s.superStairsCount;
-      existing.shitStairsCount += s.shitStairsCount;
-      existing.lowestScoreCount += s.lowestScoreCount;
-      existing.lowestScoreSipsDrunk += s.lowestScoreSipsDrunk;
-      existing.tiebreakerWins += s.tiebreakerWins;
-      playerStatsMap.set(name, existing);
+      const participant = session.participants.find(
+        (p) => p.id === s.participantId,
+      );
+      if (!participant) continue;
+
+      const key = getAggregationKey(participant);
+      const name = getParticipantName(participant);
+      const username = getUsernameById(s.participantId, session.participants);
+      const existing =
+        playerStatsMap.get(key) ?? emptyAggregatedStats(name, username);
+      accumulateStats(existing, s, winnerId === s.participantId);
+      playerStatsMap.set(key, existing);
     }
   }
 

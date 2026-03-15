@@ -1,11 +1,11 @@
 import type {
   Dice,
-  SelectGameParticipant,
   SelectGameSession,
   SelectPlayerTurn,
   SelectRoll,
   SelectRound,
 } from "@/db/schema";
+import type { ParticipantWithPlayer } from "@/lib/models";
 
 // ── Dice shorthand ──────────────────────────────────────────────────────────
 
@@ -95,18 +95,20 @@ export function createSession(
   };
 }
 
-// ── Factory: SelectGameParticipant ──────────────────────────────────────────
+// ── Factory: ParticipantWithPlayer ──────────────────────────────────────────
 
 export function createParticipant(
-  overrides: Partial<SelectGameParticipant> = {},
-): SelectGameParticipant {
+  overrides: Partial<ParticipantWithPlayer> = {},
+): ParticipantWithPlayer {
   return {
     id: autoId(),
     gameSessionId: 1,
     playerId: null,
+    guestId: null,
     playerType: "guest",
     guestName: `Player ${nextId}`,
     joinedAt: DEFAULT_DATE,
+    playerUsername: null,
     ...overrides,
   };
 }

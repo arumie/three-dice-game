@@ -27,6 +27,7 @@
 - [ ] Players can be added to a game session after it has started (not during a round, but between rounds)
 - [ ] Add hyping mechanism that shows chances good rolls - Ex. "Only one more [1] for a three of a kind", "1/6 chance to get a stair!"
 - [ ] Stats - Relative stats like (avg baddest rolls)
+- [ ] Add graphs showing progress over rounds for every player  - Should be able to switch between what stat to show (sips, special rolls, rounds won/lost) 
 
 ## Bugs
 
@@ -55,3 +56,4 @@
 - [ ] Encrypt/decrypt the password in the database for game sessions
 - [ ] Ensure that the game session can handle up to 20 players in the UI
 - [ ] Add playwright e2e tests for the game session
+- [ ] Split debug-panel into multiple smaller components

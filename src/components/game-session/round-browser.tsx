@@ -14,12 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { DiceDisplay } from "./dice-display";
 import type { RoundModel } from "@/lib/models";
-import type { SelectGameParticipant } from "@/db/schema";
+import type { ParticipantWithPlayer } from "@/lib/models";
 import { formatSpecialRoll, getNameById } from "@/lib/game-helpers";
+import { PlayerName } from "@/components/player-name";
 
 interface RoundBrowserProps {
   rounds: RoundModel[];
-  participants: SelectGameParticipant[];
+  participants: ParticipantWithPlayer[];
 }
 
 export function RoundBrowser({ rounds, participants }: RoundBrowserProps) {
@@ -95,7 +96,6 @@ export function RoundBrowser({ rounds, participants }: RoundBrowserProps) {
         {/* Player turns */}
         <div className="flex flex-col gap-1.5">
           {round.playerOrder.map((participantId) => {
-            const name = getNameById(participantId, participants);
             const turn = round.turns.find(
               (t) => t.participantId === participantId,
             );
@@ -123,7 +123,10 @@ export function RoundBrowser({ rounds, participants }: RoundBrowserProps) {
                   <span
                     className={`text-sm font-medium ${isLoser ? "text-destructive" : ""}`}
                   >
-                    {name}
+                    <PlayerName
+                      participantId={participantId}
+                      participants={participants}
+                    />
                   </span>
                   {special ? (
                     <Badge

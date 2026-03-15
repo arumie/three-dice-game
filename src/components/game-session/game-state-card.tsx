@@ -41,12 +41,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
-import {
-  formatStatus,
-  getNameById,
-  getStatusVariant,
-} from "@/lib/game-helpers";
+import { formatStatus, getStatusVariant } from "@/lib/game-helpers";
 import type { GameModel, ParticipantStats } from "@/lib/models";
+import { PlayerName } from "@/components/player-name";
 import { BeerTracker } from "./beer-tracker";
 
 interface GameStateCardProps {
@@ -228,7 +225,6 @@ export function GameStateCard({
         <CardContent className="px-4 pb-4 pt-0 sm:px-5">
           <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
             {sortedStats.map((s, idx) => {
-              const name = getNameById(s.participantId, session.participants);
               const isLeader = isLeaderStats(s);
               const isTrailer = isTrailerStats(s);
               const isMostDrunk = isMostDrunkStats(s);
@@ -268,7 +264,10 @@ export function GameStateCard({
 
                     {/* Name */}
                     <span className="min-w-0 flex-1 truncate text-base font-semibold">
-                      {name}
+                      <PlayerName
+                        participantId={s.participantId}
+                        participants={session.participants}
+                      />
                     </span>
 
                     {/* Stats */}

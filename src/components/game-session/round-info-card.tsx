@@ -4,17 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { DiceDisplay } from "./dice-display";
 import type { RoundModel } from "@/lib/models";
-import type { SelectGameParticipant } from "@/db/schema";
+import type { ParticipantWithPlayer } from "@/lib/models";
 import {
   formatSpecialRoll,
   formatStatus,
   getNameById,
   getStatusVariant,
 } from "@/lib/game-helpers";
+import { PlayerName } from "@/components/player-name";
 
 interface RoundInfoCardProps {
   round: RoundModel;
-  participants: SelectGameParticipant[];
+  participants: ParticipantWithPlayer[];
   currentParticipantId?: number;
 }
 
@@ -156,7 +157,6 @@ export function RoundInfoCard({
         </h3>
         <div className="flex flex-col gap-1.5">
           {round.playerOrder.map((participantId, idx) => {
-            const name = getNameById(participantId, participants);
             const turnData = round.turns.find(
               (t) => t.participantId === participantId,
             );
@@ -179,7 +179,10 @@ export function RoundInfoCard({
                     {idx + 1}
                   </span>
                   <span className="flex-1 text-sm font-medium">
-                    {name}
+                    <PlayerName
+                      participantId={participantId}
+                      participants={participants}
+                    />
                     {isCurrent && (
                       <ChevronRight className="ml-1 inline size-3.5 text-primary" />
                     )}

@@ -13,8 +13,9 @@ import {
 } from "@/components/ui/dialog";
 import { DiceDisplay } from "./dice-display";
 import { cn } from "@/lib/utils";
-import type { SelectGameParticipant } from "@/db/schema";
+import type { ParticipantWithPlayer } from "@/lib/models";
 import { getParticipantName } from "@/lib/game-helpers";
+import { PlayerName } from "@/components/player-name";
 
 const DICE_VALUES = [1, 2, 3, 4, 5, 6];
 
@@ -22,7 +23,7 @@ interface TiebreakerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tiedParticipantIds: number[];
-  participants: SelectGameParticipant[];
+  participants: ParticipantWithPlayer[];
   onConfirm: (winnerId: number) => void;
 }
 
@@ -148,7 +149,9 @@ export function TiebreakerDialog({
                     {name.charAt(0).toUpperCase()}
                   </div>
                   <span className="flex-1 text-sm font-medium">
-                    {name}
+                    <PlayerName
+                      participant={participants.find((p) => p.id === id)!}
+                    />
                     {isHighest && (
                       <Crown className="ml-1.5 inline size-3.5 text-green-500" />
                     )}

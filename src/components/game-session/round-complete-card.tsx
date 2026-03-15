@@ -25,12 +25,13 @@ import { TiebreakerDialog } from "./tiebreaker-dialog";
 import { DiceDisplay } from "./dice-display";
 import { cn } from "@/lib/utils";
 import type { RoundModel } from "@/lib/models";
-import type { SelectGameParticipant } from "@/db/schema";
+import type { ParticipantWithPlayer } from "@/lib/models";
 import {
   formatSpecialRoll,
   getNameById,
   formatNamesList,
 } from "@/lib/game-helpers";
+import { PlayerName } from "@/components/player-name";
 import {
   computeLowestRollCounts,
   computeStairsSipsToAward,
@@ -44,7 +45,7 @@ function LowestRollsBanner({
   participants,
 }: {
   lowestRolls: { participantId: number; count: number }[];
-  participants: SelectGameParticipant[];
+  participants: ParticipantWithPlayer[];
 }) {
   if (lowestRolls.length === 0) return null;
 
@@ -55,7 +56,10 @@ function LowestRollsBanner({
           <TrendingDown className="size-4 text-amber-600 dark:text-amber-400" />
           <span className="text-muted-foreground">
             <span className="font-semibold">
-              {getNameById(lr.participantId, participants)}
+              <PlayerName
+                participantId={lr.participantId}
+                participants={participants}
+              />
             </span>
             {" rolled the lowest"}
             {lr.count > 1 ? ` ${lr.count} times` : ""}
@@ -72,7 +76,7 @@ function LowestRollsBanner({
 
 function getSipAnnotation(
   turn: RoundModel["turns"][number],
-  participants: SelectGameParticipant[],
+  participants: ParticipantWithPlayer[],
 ): { text: string } | null {
   if (turn.specialRollType === "three_of_a_kind" && turn.rolls.length > 0) {
     const lastRoll = turn.rolls[turn.rolls.length - 1];
@@ -108,11 +112,10 @@ function TurnScoreRow({
   variant,
 }: {
   turn: RoundModel["turns"][number];
-  participants: SelectGameParticipant[];
+  participants: ParticipantWithPlayer[];
   isLoser?: boolean;
   variant: "safe" | "final";
 }) {
-  const name = getNameById(turn.participantId, participants);
   const special = formatSpecialRoll(turn.specialRollType);
   const annotation = getSipAnnotation(turn, participants);
   const lastRoll =
@@ -138,7 +141,10 @@ function TurnScoreRow({
             isLoser && "text-destructive",
           )}
         >
-          {name}
+          <PlayerName
+            participantId={turn.participantId}
+            participants={participants}
+          />
         </span>
         <Badge
           variant="outline"
@@ -245,7 +251,7 @@ function TurnResultsList({
   variant,
 }: {
   turns: RoundModel["turns"];
-  participants: SelectGameParticipant[];
+  participants: ParticipantWithPlayer[];
   loserIds?: number[];
   variant: "safe" | "final";
 }) {
@@ -332,7 +338,7 @@ function RoundCompleteFooter({
 
 interface RoundCompleteCardProps {
   round: RoundModel;
-  participants: SelectGameParticipant[];
+  participants: ParticipantWithPlayer[];
   isPending: boolean;
   onStartRound: (startingParticipantId?: number) => void;
 }

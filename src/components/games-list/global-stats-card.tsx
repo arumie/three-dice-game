@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Dices,
   Beer,
@@ -45,6 +46,7 @@ type AwardDef = {
   icon: LucideIcon;
   color: string;
   name: string;
+  username: string | null;
   value: number;
 };
 
@@ -61,7 +63,37 @@ function buildAward(
     (a, b) => (b[key] as number) - (a[key] as number),
   )[0];
   const value = top[key] as number;
-  return value > 0 ? { label, quip, icon, color, name: top.name, value } : null;
+  return value > 0
+    ? {
+        label,
+        quip,
+        icon,
+        color,
+        name: top.name,
+        username: top.username,
+        value,
+      }
+    : null;
+}
+
+function AwardName({
+  name,
+  username,
+}: {
+  name: string;
+  username: string | null;
+}) {
+  if (username) {
+    return (
+      <Link
+        href={`/player/${encodeURIComponent(username)}`}
+        className="underline decoration-muted-foreground/40 underline-offset-2 hover:decoration-foreground"
+      >
+        {name}
+      </Link>
+    );
+  }
+  return <>{name}</>;
 }
 
 export function GlobalStatsCard({ stats, playerStats }: GlobalStatsCardProps) {
@@ -284,7 +316,7 @@ export function GlobalStatsCard({ stats, playerStats }: GlobalStatsCardProps) {
                       </span>
                     </div>
                     <span className="text-sm font-bold sm:text-base">
-                      {award.name}{" "}
+                      <AwardName name={award.name} username={award.username} />{" "}
                       <span className="text-xs font-normal text-muted-foreground sm:text-sm">
                         ({award.value})
                       </span>

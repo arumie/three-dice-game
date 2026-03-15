@@ -48,10 +48,17 @@ export interface RoundModel extends SelectRound {
 }
 
 /**
+ * Participant with joined player username (for registered players)
+ */
+export interface ParticipantWithPlayer extends SelectGameParticipant {
+  playerUsername: string | null;
+}
+
+/**
  * GameSession domain model with calculated fields
  */
 export interface GameModel extends SelectGameSession {
-  participants: SelectGameParticipant[];
+  participants: ParticipantWithPlayer[];
   rounds: RoundModel[];
   status: "waiting" | "in_progress" | "completed";
   startedAt: Date | null;
@@ -88,10 +95,11 @@ export interface PlayerGlobalStats {
 }
 
 /**
- * Aggregated player statistics across all games (keyed by guest name until player registration is implemented)
+ * Aggregated player statistics across all games, keyed by playerId (registered) or guestId (guest)
  */
 export interface AggregatedPlayerStats {
   name: string;
+  username: string | null;
   gamesPlayed: number;
   gamesWon: number;
   roundsWon: number;
