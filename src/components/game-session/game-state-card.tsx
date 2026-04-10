@@ -2,6 +2,8 @@
 
 import {
   Beer,
+  ChevronDown,
+  CircleHelp,
   Crown,
   Dices,
   Frown,
@@ -63,6 +65,7 @@ export function GameStateCard({
   const router = useRouter();
   const [endGameOpen, setEndGameOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false);
 
   const appDiceKey = `useAppDice:${gameSessionId}`;
   const [useAppDice, setUseAppDice] = useState(() => {
@@ -225,6 +228,69 @@ export function GameStateCard({
 
         {/* Scoreboard */}
         <CardContent className="px-4 pb-4 pt-0 sm:px-5">
+          {/* Icon legend accordion */}
+          <div className="mb-3 rounded-lg border border-border bg-muted/30">
+            <button
+              onClick={() => setLegendOpen((v) => !v)}
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
+              aria-expanded={legendOpen}
+            >
+              <CircleHelp className="size-3.5" />
+              Icon Legend
+              <ChevronDown
+                className={`ml-auto size-3.5 transition-transform ${legendOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            <div
+              className={`grid transition-[grid-template-rows] duration-200 ease-out ${legendOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
+            >
+              <div className="overflow-hidden">
+                <div className={`border-t border-border px-4 pb-3 pt-2.5 transition-opacity duration-200 ${legendOpen ? "opacity-100" : "opacity-0"}`}>
+                  <div className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
+                    <div className="flex items-center gap-2">
+                      <Crown className="size-4 shrink-0 text-yellow-600 dark:text-yellow-400" />
+                      <span className="text-muted-foreground">Leader</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Frown className="size-4 shrink-0 text-purple-600 dark:text-purple-400" />
+                      <span className="text-muted-foreground">Trailer</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Trophy className="size-4 shrink-0 text-primary" />
+                      <span className="text-muted-foreground">Rounds won</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Beer className="size-4 shrink-0 text-muted-foreground" />
+                      <span className="text-muted-foreground">Sips drunk</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Skull className="size-4 shrink-0 text-red-500" />
+                      <span className="text-muted-foreground">Sips drunk (most drunk)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Dices className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                      <span className="text-muted-foreground">Special rolls</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Toilet className="size-4 shrink-0 text-amber-800 dark:text-amber-600" />
+                      <span className="text-muted-foreground">Shit stairs</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <TrendingDown className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                      <span className="text-muted-foreground">Lowest score rolls</span>
+                    </div>
+                    <div className="flex items-center gap-2 sm:col-span-2">
+                      <span className="flex size-4 shrink-0 items-center justify-center">
+                        <Beer className="size-3.5 text-amber-600 dark:text-amber-400" />
+                      </span>
+                      <span className="text-muted-foreground">Beer tracker (14 sips per beer)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
             {sortedStats.map((s, idx) => {
               const isLeader = isLeaderStats(s);
@@ -334,6 +400,7 @@ export function GameStateCard({
               );
             })}
           </div>
+
         </CardContent>
       </Card>
 
