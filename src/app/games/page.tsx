@@ -12,6 +12,7 @@ import {
   type GlobalStats,
 } from "@/components/games-list/global-stats-card";
 import { GameListCard } from "@/components/games-list/game-list-card";
+import { GamesDebugPanel } from "@/components/games-list/games-debug-panel";
 import { HomeButton } from "@/components/home-button";
 import type { AggregatedPlayerStats, GameModel } from "@/lib/models";
 
@@ -132,6 +133,13 @@ export default async function GamesPage() {
           </div>
         )}
       </div>
+
+      <GamesDebugPanel
+        inProgressGames={inProgressData.map(({ session }) => ({
+          id: session.id,
+          name: session.config.name,
+        }))}
+      />
     </div>
   );
 }

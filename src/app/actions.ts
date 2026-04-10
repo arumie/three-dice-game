@@ -264,6 +264,26 @@ export async function endGameAction(data: { gameSessionId: number }) {
 }
 
 /**
+ * End (complete) a game session after verifying the admin password.
+ * Used from the /games list page where game-specific auth cookies are unavailable.
+ */
+export async function endGameSessionAction(
+  gameSessionId: number,
+  adminPassword: string,
+): Promise<{ success: boolean; error?: string }> {
+  const expected = process.env.ADMIN_PASSWORD;
+  if (!expected || adminPassword !== expected) {
+    return { success: false, error: "Invalid admin password" };
+  }
+  const senderId = await getSyncSenderId();
+  await completeGameSession(gameSessionId);
+  updateTag(gameSessionTag(gameSessionId));
+  updateTag(ALL_GAMES_TAG);
+  publishGameUpdate(gameSessionId, senderId);
+  return { success: true };
+}
+
+/**
  * Delete a game session after verifying the admin password.
  */
 export async function deleteGameSessionAction(
