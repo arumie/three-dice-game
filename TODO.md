@@ -18,6 +18,7 @@
 - [x] Add "beer" tracking. Add the number of beers that a player has to have consumed (14 sips pr beer). Add to game state card. The beers should be an actual beer icon (one for each beer that needs  to have been consumed) and should show how the level of the beer should be for the current one the player is on. (see `beer-bottle.tsx`, `beer-tracker.tsx`, `game-state-card.tsx`) ([307e502](https://github.com/arumie/three-dice-game/commit/307e502))
 - [x] Player registration with persistent profiles and player stats (games played, rounds won/lost, total sips, special rolls, etc.) ([afce81b](https://github.com/arumie/three-dice-game/commit/afce81b))
 - [x] Add system for checking for changes if multiple players are looking at the same game session and update the game session in real time if changes are detected. ([08d3dbb](https://github.com/arumie/three-dice-game/commit/08d3dbb))
+- [x] Add an info box that explains the icons in the game info screen.
 
 ### TODO
 
@@ -28,12 +29,11 @@
 - [ ] Add player/spectator mode selection when joining a game session. Choose whether you play as a single player or control all players. Lock action buttons on devices whose turn it isn't, so only the active player's device can interact.
 - [ ] Players can be added to a game session after it has started (not during a round, but between rounds)
 - [ ] Add hyping mechanism that shows chances good rolls - Ex. "Only one more [1] for a three of a kind", "1/6 chance to get a stair!"
-- [ ] Stats - Relative stats like (avg baddest rolls)
+- [ ] Stats - Relative stats like avg. worst roller (i.e. Simon)
 - [ ] Add graphs showing progress over rounds for every player  - Should be able to switch between what stat to show (sips, special rolls, rounds won/lost) 
 - [ ] Add profile settings for players to change their display name and add profile picture
 
 #### Easy
-
 
 ## Bugs
 
@@ -43,6 +43,7 @@
 - [x] Infinite loading on home page after having started a game ([60d1190](https://github.com/arumie/three-dice-game/commit/60d1190))
 - [x] Super stair doesnt check for previous stairs ([1540684](https://github.com/arumie/three-dice-game/commit/1540684))
 - [x] Rules should contain section on "All safe" ([cfdb7a5](https://github.com/arumie/three-dice-game/commit/cfdb7a5))
+- [x] Switching apps on mobile during game creation causes duplicate game with same input (mobile tab suspension drops server action response, form re-appears with values, user re-submits)
 
 ### TODO
 

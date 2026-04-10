@@ -1,7 +1,9 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "..";
 import {
+  gameParticipantsTable,
   gameSessionsTable,
+  playersTable,
   type GameSessionConfig,
   type InsertGameSession,
   type SelectGameSession,
@@ -146,6 +148,62 @@ export async function deleteGameSession(id: number): Promise<boolean> {
     .where(eq(gameSessionsTable.id, id))
     .returning();
   return result.length > 0;
+}
+
+/**
+ * Find an in-progress game session that matches the given name, password,
+ * and exact set of player names. Used to prevent duplicate game creation
+ * (e.g. when a mobile tab suspends and the user re-submits the form).
+ *
+ * Returns the first matching session ID, or null if no duplicate exists.
+ */
+export async function findDuplicateInProgressGame(
+  name: string,
+  password: string,
+  playerNames: string[],
+): Promise<number | null> {
+  const candidates = await db
+    .select({ id: gameSessionsTable.id })
+    .from(gameSessionsTable)
+    .where(
+      and(
+        isNull(gameSessionsTable.completedAt),
+        eq(gameSessionsTable.password, password),
+        eq(sql`${gameSessionsTable.config}->>'name'`, name),
+      ),
+    );
+
+  if (candidates.length === 0) return null;
+
+  const sortedInput = playerNames
+    .map((n) => n.trim().toLowerCase())
+    .sort()
+    .join("\0");
+
+  for (const candidate of candidates) {
+    const participants = await db
+      .select({
+        guestName: gameParticipantsTable.guestName,
+        playerUsername: playersTable.username,
+      })
+      .from(gameParticipantsTable)
+      .leftJoin(
+        playersTable,
+        eq(gameParticipantsTable.playerId, playersTable.id),
+      )
+      .where(eq(gameParticipantsTable.gameSessionId, candidate.id));
+
+    const sortedExisting = participants
+      .map((p) => (p.playerUsername ?? p.guestName ?? "").toLowerCase())
+      .sort()
+      .join("\0");
+
+    if (sortedInput === sortedExisting) {
+      return candidate.id;
+    }
+  }
+
+  return null;
 }
 
 /**

@@ -8,6 +8,7 @@ import {
   createGuestParticipant,
   createRegisteredParticipant,
   deleteGameSession,
+  findDuplicateInProgressGame,
   getGameParticipantById,
   getGameSessionById,
   getPlayerByUsername,
@@ -81,18 +82,35 @@ export async function verifyOrRegisterPlayerAction(
   return { status: "available" };
 }
 
+export type CreateGameResult =
+  | { id: number }
+  | { duplicateGameId: number };
+
 export async function createGameAction(data: {
   name: string;
   password: string;
   players: { name: string; playerId?: number; playerPassword?: string }[];
   randomTurnOrder: boolean;
   creationPassword?: string;
-}) {
+}): Promise<CreateGameResult> {
   const requiredCreationPassword = process.env.GAME_CREATION_PASSWORD;
   if (requiredCreationPassword) {
     if (data.creationPassword !== requiredCreationPassword) {
       throw new Error("Invalid creation password");
     }
+  }
+
+  const duplicateId = await findDuplicateInProgressGame(
+    data.name,
+    data.password,
+    data.players.map((p) => p.name),
+  );
+  if (duplicateId != null) {
+    console.warn(
+      `[createGameAction] Duplicate game detected — redirecting to existing session ${duplicateId} (name="${data.name}", players=${data.players.map((p) => p.name).join(", ")})`,
+    );
+    await setGameAuthCookie(duplicateId, data.password);
+    return { duplicateGameId: duplicateId };
   }
 
   const session = await createGameSession({

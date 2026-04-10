@@ -49,6 +49,7 @@ import { DiceLoading } from "@/components/dice-loading";
 import {
   createGameAction,
   verifyOrRegisterPlayerAction,
+  type CreateGameResult,
   type VerifyResult,
 } from "@/app/actions";
 import { toast } from "sonner";
@@ -262,7 +263,7 @@ export function NewGameForm({
     async (values: NewGameFormValues) => {
       setIsLoading(true);
       try {
-        const [result] = await Promise.all([
+        const [result] = (await Promise.all([
           createGameAction({
             name: values.name,
             password: values.password,
@@ -276,7 +277,20 @@ export function NewGameForm({
             creationPassword: values.creationPassword,
           }),
           new Promise((resolve) => setTimeout(resolve, MIN_LOADING_MS)),
-        ]);
+        ])) as [CreateGameResult, unknown];
+
+        if ("duplicateGameId" in result) {
+          setIsLoading(false);
+          toast("A game with these settings is already in progress.", {
+            action: {
+              label: "Go to game",
+              onClick: () =>
+                router.push(`/game-session/${result.duplicateGameId}`),
+            },
+            duration: 10000,
+          });
+          return;
+        }
 
         router.push(`/game-session/${result.id}`);
       } catch {
