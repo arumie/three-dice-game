@@ -10,6 +10,7 @@ import {
   EyeOff,
   Check,
   AlertCircle,
+  Info,
   UserPlus,
   Loader2,
   ShieldCheck,
@@ -403,8 +404,9 @@ export function NewGameForm({
                   />
 
                   <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Players ({fields.length})</FormLabel>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <FormLabel>Players ({fields.length})</FormLabel>
                       {canAdd && (
                         <Button
                           type="button"
@@ -423,6 +425,20 @@ export function NewGameForm({
                           Add Player
                         </Button>
                       )}
+                      </div>
+                      <div className="flex gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2.5">
+                        <Info className="mt-0.5 size-4 shrink-0 text-primary" />
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-xs font-medium sm:text-sm">
+                            Want to track your stats?
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Add a password next to a player name to create a
+                            profile with stats across games. Or leave it blank
+                            to join as a guest.
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="flex flex-col gap-3">
@@ -433,36 +449,36 @@ export function NewGameForm({
 
                         return (
                           <div key={field.id} className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2">
-                              <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row">
-                                <FormField
-                                  control={form.control}
-                                  name={`players.${index}.name`}
-                                  render={({ field: nameField }) => (
-                                    <FormItem className="flex-1">
-                                      <FormControl>
-                                        <Input
-                                          placeholder={`Player ${index + 1}`}
-                                          autoComplete="off"
-                                          maxLength={30}
-                                          {...nameField}
-                                          onChange={(e) => {
-                                            nameField.onChange(e);
-                                            resetVerification(index);
-                                          }}
-                                          onBlur={(e) => {
-                                            nameField.onBlur();
-                                            handlePlayerFieldEvent(index, e);
-                                          }}
-                                          onKeyDown={(e) =>
-                                            handlePlayerFieldEvent(index, e)
-                                          }
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
+                            <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
+                              <FormField
+                                control={form.control}
+                                name={`players.${index}.name`}
+                                render={({ field: nameField }) => (
+                                  <FormItem className="flex-1">
+                                    <FormControl>
+                                      <Input
+                                        placeholder={`Player ${index + 1}`}
+                                        autoComplete="off"
+                                        maxLength={30}
+                                        {...nameField}
+                                        onChange={(e) => {
+                                          nameField.onChange(e);
+                                          resetVerification(index);
+                                        }}
+                                        onBlur={(e) => {
+                                          nameField.onBlur();
+                                          handlePlayerFieldEvent(index, e);
+                                        }}
+                                        onKeyDown={(e) =>
+                                          handlePlayerFieldEvent(index, e)
+                                        }
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <div className="flex items-center gap-1">
                                 <FormField
                                   control={form.control}
                                   name={`players.${index}.playerPassword`}
@@ -489,6 +505,9 @@ export function NewGameForm({
                                           />
                                         </FormControl>
                                         <InputGroupAddon align="inline-end">
+                                          <VerifyIndicator
+                                            status={verifyStatus}
+                                          />
                                           <InputGroupButton
                                             size="icon-xs"
                                             onClick={() =>
@@ -511,22 +530,21 @@ export function NewGameForm({
                                     </FormItem>
                                   )}
                                 />
+                                {canRemove && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-9 shrink-0 text-muted-foreground hover:text-destructive"
+                                    onClick={() => remove(index)}
+                                  >
+                                    <X className="size-4" />
+                                    <span className="sr-only">
+                                      Remove player {index + 1}
+                                    </span>
+                                  </Button>
+                                )}
                               </div>
-                              <VerifyIndicator status={verifyStatus} />
-                              {canRemove && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="size-9 shrink-0 text-muted-foreground hover:text-destructive"
-                                  onClick={() => remove(index)}
-                                >
-                                  <X className="size-4" />
-                                  <span className="sr-only">
-                                    Remove player {index + 1}
-                                  </span>
-                                </Button>
-                              )}
                             </div>
                             {verifyStatus === "wrong_password" && (
                               <p className="text-xs text-destructive">
@@ -550,14 +568,11 @@ export function NewGameForm({
                       </p>
                     )}
 
-                    <p className="text-xs text-muted-foreground">
-                      Leave password empty for guest players.{" "}
-                      {canAdd && (
-                        <>
-                          {MIN_PLAYERS}&ndash;{MAX_PLAYERS} players allowed.
-                        </>
-                      )}
-                    </p>
+                    {canAdd && (
+                      <p className="text-xs text-muted-foreground">
+                        {MIN_PLAYERS}&ndash;{MAX_PLAYERS} players allowed.
+                      </p>
+                    )}
                   </div>
 
                   <FormField

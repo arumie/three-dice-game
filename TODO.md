@@ -21,6 +21,7 @@
 - [x] Add an info box that explains the icons in the game info screen.
 - [x] Add admin debug panel to /games page for ending in-progress games (see `games-debug-panel.tsx` + `endGameSessionAction`) ([9976301](https://github.com/arumie/three-dice-game/commit/9976301))
 - [x] Show "X games in progress" banner on home page above the new-game form, linking to /games (see `new-game-form.tsx` `inProgressCount` prop)
+- [x] Improve new game form UX: player stats info box, full-width player fields with inline verify indicators, and smaller mobile input font size
 
 ### TODO
 
