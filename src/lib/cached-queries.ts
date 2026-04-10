@@ -32,7 +32,9 @@ export async function getGameSession(id: number): Promise<GameModel | null> {
  * Invalidated when games are created or completed via
  * `updateTag(ALL_GAMES_TAG)`.
  */
-export async function getPlayer(username: string): Promise<SelectPlayer | null> {
+export async function getPlayer(
+  username: string,
+): Promise<SelectPlayer | null> {
   cacheTag(playerTag(username));
   cacheLife("default");
   return getPlayerByUsernameQuery(username);

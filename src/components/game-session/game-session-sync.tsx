@@ -4,9 +4,7 @@ import { useGameSessionSync } from "@/hooks/use-game-session-sync";
 import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function GameSessionSync({
-  gameSessionId,
-}: { gameSessionId: number }) {
+export function GameSessionSync({ gameSessionId }: { gameSessionId: number }) {
   const { viewerCount } = useGameSessionSync(gameSessionId);
 
   if (viewerCount <= 1) return null;

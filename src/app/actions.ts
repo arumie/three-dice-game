@@ -82,9 +82,7 @@ export async function verifyOrRegisterPlayerAction(
   return { status: "available" };
 }
 
-export type CreateGameResult =
-  | { id: number }
-  | { duplicateGameId: number };
+export type CreateGameResult = { id: number } | { duplicateGameId: number };
 
 export async function createGameAction(data: {
   name: string;

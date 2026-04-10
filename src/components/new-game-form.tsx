@@ -407,24 +407,24 @@ export function NewGameForm({
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center justify-between">
                         <FormLabel>Players ({fields.length})</FormLabel>
-                      {canAdd && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            append({
-                              name: "",
-                              playerPassword: "",
-                              playerId: undefined,
-                              verifyStatus: "idle",
-                            })
-                          }
-                        >
-                          <Plus className="size-4" />
-                          Add Player
-                        </Button>
-                      )}
+                        {canAdd && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              append({
+                                name: "",
+                                playerPassword: "",
+                                playerId: undefined,
+                                verifyStatus: "idle",
+                              })
+                            }
+                          >
+                            <Plus className="size-4" />
+                            Add Player
+                          </Button>
+                        )}
                       </div>
                       <div className="flex gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2.5">
                         <Info className="mt-0.5 size-4 shrink-0 text-primary" />

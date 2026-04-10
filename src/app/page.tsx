@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 export default async function Home() {
   const games = await getAllGames();
   const requiresCreationPassword = !!process.env.GAME_CREATION_PASSWORD;
-  const inProgressCount = games.filter((g) => g.status === "in_progress").length;
+  const inProgressCount = games.filter(
+    (g) => g.status === "in_progress",
+  ).length;
 
   return (
     <div className="flex flex-1 flex-col items-center px-4 py-8 sm:px-6 md:py-12">

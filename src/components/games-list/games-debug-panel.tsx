@@ -40,10 +40,7 @@ export function GamesDebugPanel({ inProgressGames }: GamesDebugPanelProps) {
   function handleEndGame() {
     if (!selectedGame) return;
     startTransition(async () => {
-      const result = await endGameSessionAction(
-        selectedGame.id,
-        adminPassword,
-      );
+      const result = await endGameSessionAction(selectedGame.id, adminPassword);
       if (result.success) {
         setEndOpen(false);
         toast.success(`Game "${selectedGame.name}" ended`);
@@ -135,7 +132,10 @@ export function GamesDebugPanel({ inProgressGames }: GamesDebugPanelProps) {
             </div>
 
             <div className="flex flex-col gap-2">
-              <Label htmlFor="end-game-admin-password" className="text-sm font-medium">
+              <Label
+                htmlFor="end-game-admin-password"
+                className="text-sm font-medium"
+              >
                 Admin password
               </Label>
               <Input

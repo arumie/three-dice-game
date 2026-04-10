@@ -19,10 +19,7 @@ export async function getSyncSenderId(): Promise<string | undefined> {
   return (await cookies()).get("game-sync-client-id")?.value;
 }
 
-export function publishGameUpdate(
-  gameSessionId: number,
-  senderId?: string,
-) {
+export function publishGameUpdate(gameSessionId: number, senderId?: string) {
   const ably = getClient();
   if (!ably) return;
 

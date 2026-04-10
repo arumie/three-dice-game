@@ -245,7 +245,9 @@ export function GameStateCard({
               className={`grid transition-[grid-template-rows] duration-200 ease-out ${legendOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
             >
               <div className="overflow-hidden">
-                <div className={`border-t border-border px-4 pb-3 pt-2.5 transition-opacity duration-200 ${legendOpen ? "opacity-100" : "opacity-0"}`}>
+                <div
+                  className={`border-t border-border px-4 pb-3 pt-2.5 transition-opacity duration-200 ${legendOpen ? "opacity-100" : "opacity-0"}`}
+                >
                   <div className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
                     <div className="flex items-center gap-2">
                       <Crown className="size-4 shrink-0 text-yellow-600 dark:text-yellow-400" />
@@ -265,11 +267,15 @@ export function GameStateCard({
                     </div>
                     <div className="flex items-center gap-2">
                       <Skull className="size-4 shrink-0 text-red-500" />
-                      <span className="text-muted-foreground">Sips drunk (most drunk)</span>
+                      <span className="text-muted-foreground">
+                        Sips drunk (most drunk)
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Dices className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                      <span className="text-muted-foreground">Special rolls</span>
+                      <span className="text-muted-foreground">
+                        Special rolls
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Toilet className="size-4 shrink-0 text-amber-800 dark:text-amber-600" />
@@ -277,13 +283,17 @@ export function GameStateCard({
                     </div>
                     <div className="flex items-center gap-2">
                       <TrendingDown className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                      <span className="text-muted-foreground">Lowest score rolls</span>
+                      <span className="text-muted-foreground">
+                        Lowest score rolls
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 sm:col-span-2">
                       <span className="flex size-4 shrink-0 items-center justify-center">
                         <Beer className="size-3.5 text-amber-600 dark:text-amber-400" />
                       </span>
-                      <span className="text-muted-foreground">Beer tracker (14 sips per beer)</span>
+                      <span className="text-muted-foreground">
+                        Beer tracker (14 sips per beer)
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -400,7 +410,6 @@ export function GameStateCard({
               );
             })}
           </div>
-
         </CardContent>
       </Card>
 
