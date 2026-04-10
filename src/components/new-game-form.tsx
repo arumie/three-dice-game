@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Plus,
   X,
@@ -120,6 +121,7 @@ const DEFAULT_PLAYERS = Array.from({ length: MIN_PLAYERS }, () => ({
 
 interface NewGameFormProps {
   requiresCreationPassword?: boolean;
+  inProgressCount?: number;
 }
 
 type PlayerVerifyStatus = NonNullable<
@@ -163,6 +165,7 @@ function VerifyIndicator({ status }: { status: PlayerVerifyStatus }) {
 
 export function NewGameForm({
   requiresCreationPassword = false,
+  inProgressCount = 0,
 }: NewGameFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -314,6 +317,17 @@ export function NewGameForm({
           Three Dice Game
         </h1>
       </div>
+
+      {inProgressCount > 0 && (
+        <div className="mb-4 w-full max-w-sm sm:max-w-md">
+          <Button variant="outline" asChild className="w-full text-primary">
+            <Link href="/games">
+              {inProgressCount} {inProgressCount === 1 ? "game" : "games"} in
+              progress
+            </Link>
+          </Button>
+        </div>
+      )}
 
       <Card className="w-full max-w-sm sm:max-w-md">
         {isLoading ? (

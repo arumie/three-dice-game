@@ -19,6 +19,8 @@
 - [x] Player registration with persistent profiles and player stats (games played, rounds won/lost, total sips, special rolls, etc.) ([afce81b](https://github.com/arumie/three-dice-game/commit/afce81b))
 - [x] Add system for checking for changes if multiple players are looking at the same game session and update the game session in real time if changes are detected. ([08d3dbb](https://github.com/arumie/three-dice-game/commit/08d3dbb))
 - [x] Add an info box that explains the icons in the game info screen.
+- [x] Add admin debug panel to /games page for ending in-progress games (see `games-debug-panel.tsx` + `endGameSessionAction`) ([9976301](https://github.com/arumie/three-dice-game/commit/9976301))
+- [x] Show "X games in progress" banner on home page above the new-game form, linking to /games (see `new-game-form.tsx` `inProgressCount` prop)
 
 ### TODO
 
