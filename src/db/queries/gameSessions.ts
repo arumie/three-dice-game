@@ -1,11 +1,11 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "..";
 import {
+  type GameSessionConfig,
   gameParticipantsTable,
   gameSessionsTable,
-  playersTable,
-  type GameSessionConfig,
   type InsertGameSession,
+  playersTable,
   type SelectGameSession,
 } from "../schema";
 
@@ -112,17 +112,34 @@ export async function updateGameSessionConfig(
 }
 
 /**
- * Complete a game session
+ * Complete a game session.
+ *
+ * Defaults to marking it complete as of now. Pass `completedAt` to end the
+ * game at a specific time (e.g. its last-activity time when auto-ending a
+ * stale, abandoned game).
  */
 export async function completeGameSession(
   id: number,
+  completedAt: Date = new Date(),
 ): Promise<SelectGameSession | null> {
   const [session] = await db
     .update(gameSessionsTable)
-    .set({ completedAt: new Date() })
+    .set({ completedAt })
     .where(eq(gameSessionsTable.id, id))
     .returning();
   return session || null;
+}
+
+/**
+ * Get all in-progress (not completed) game sessions.
+ */
+export async function getInProgressGameSessions(): Promise<
+  SelectGameSession[]
+> {
+  return await db
+    .select()
+    .from(gameSessionsTable)
+    .where(isNull(gameSessionsTable.completedAt));
 }
 
 /**

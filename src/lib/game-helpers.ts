@@ -117,6 +117,36 @@ export function getCurrentRound(session: GameModel): RoundModel | null {
 }
 
 /**
+ * Determine the timestamp of the most recent activity in a game session.
+ *
+ * Activity is any event that advances the game: the session being created,
+ * a round starting, a turn ending, or a die being rolled. This is used to
+ * decide whether an in-progress game has gone stale (no activity for a while)
+ * and should be auto-ended, using the returned time as the end time.
+ */
+export function getGameLastActivity(session: GameModel): Date {
+  let last = session.createdAt;
+
+  const consider = (date: Date | null | undefined) => {
+    if (date && date.getTime() > last.getTime()) {
+      last = date;
+    }
+  };
+
+  for (const round of session.rounds) {
+    consider(round.startedAt);
+    for (const turn of round.turns) {
+      consider(turn.endedAt);
+      for (const roll of turn.rolls) {
+        consider(roll.rolledAt);
+      }
+    }
+  }
+
+  return last;
+}
+
+/**
  * Format a special roll type for display
  */
 export function formatSpecialRoll(type: string): string | null {

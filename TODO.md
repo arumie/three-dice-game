@@ -37,7 +37,7 @@
 - [ ] Add graphs showing progress over rounds for every player  - Should be able to switch between what stat to show (sips, special rolls, rounds won/lost) 
 - [ ] Add profile settings for players to change their display name and add profile picture
 - [ ] Add hyping mechanism that shows chances good rolls - Ex. "Only one more [1] for a three of a kind", "1/6 chance to get a stair!"
-- [ ] Make sure that "In progress" games that haven't had any activity for 12 hours are automatically ended (using the last activity as the End Time)
+- [x] Make sure that "In progress" games that haven't had any activity for 12 hours are automatically ended (using the last activity as the End Time) (daily Vercel cron `/api/cron/end-stale-games` + `endStaleInProgressGames`/`getGameLastActivity`)
 - [ ] Add the possibility for the admin to reset a players password (Should allow the admin to just change their password to a new one for them - added to the admin debug menu/panel)
 
 #### Easy
