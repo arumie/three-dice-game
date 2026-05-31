@@ -24,6 +24,7 @@
 - [x] Improve new game form UX: player stats info box, full-width player fields with inline verify indicators, and smaller mobile input font size
 - [x] Add a short cooldown on the "End turn" to prevent accidentally ending the next players turn by mistake.
 - [x] Add an admin debug panel option (only visible on the new game form) to start a new "Test" game session with 4 test players. When in the test game add a button to end game and delete it (see `new-game-debug-panel.tsx`, `createTestGameAction`/`deleteTestGameAction`, test-game button in `debug-panel.tsx`).
+- [x] Make sure that "In progress" games that haven't had any activity for 12 hours are automatically ended (using the last activity as the End Time) (daily Vercel cron `/api/cron/end-stale-games` + `endStaleInProgressGames`/`getGameLastActivity`)
 
 ### TODO
 
@@ -37,7 +38,6 @@
 - [ ] Add graphs showing progress over rounds for every player  - Should be able to switch between what stat to show (sips, special rolls, rounds won/lost) 
 - [ ] Add profile settings for players to change their display name and add profile picture
 - [ ] Add hyping mechanism that shows chances good rolls - Ex. "Only one more [1] for a three of a kind", "1/6 chance to get a stair!"
-- [x] Make sure that "In progress" games that haven't had any activity for 12 hours are automatically ended (using the last activity as the End Time) (daily Vercel cron `/api/cron/end-stale-games` + `endStaleInProgressGames`/`getGameLastActivity`)
 - [ ] Add the possibility for the admin to reset a players password (Should allow the admin to just change their password to a new one for them - added to the admin debug menu/panel)
 
 #### Easy
@@ -75,3 +75,4 @@
 - [ ] Ensure that the game session can handle up to 20 players in the UI
 - [ ] Add playwright e2e tests for the game session
 - [ ] Split debug-panel into multiple smaller components
+- [ ] Add pagination to the games list page

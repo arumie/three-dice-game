@@ -67,3 +67,8 @@ Common gitmojis:
 | ✅ | Tests |
 
 Keep the subject line concise. Optional body text is fine for extra context; avoid long subjects.
+
+## Development
+
+When finishing a task, run the verification checks and update the TODO.md file with the task completion.
+Move the task from the "TODO" section to the "Completed" section when it's done.
