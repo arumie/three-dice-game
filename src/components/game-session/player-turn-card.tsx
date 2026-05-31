@@ -50,6 +50,8 @@ import { rollDiceAction, endTurnAction, startRoundAction } from "@/app/actions";
 import { suppressGameSync } from "@/lib/game-sync";
 import { toast } from "sonner";
 
+const END_TURN_COOLDOWN_MS = 1_500;
+
 // ─── Presentational Sub-components ───────────────────────────────────────────
 
 function DiceSection({
@@ -232,6 +234,7 @@ function TurnActionButtons({
   diceToReRoll,
   stairsSipsToAward,
   isPending,
+  isEndTurnCooldown,
   isGentlemanRuleViolation,
   isRolling,
   useAppDice,
@@ -249,6 +252,7 @@ function TurnActionButtons({
   diceToReRoll: number;
   stairsSipsToAward: number;
   isPending: boolean;
+  isEndTurnCooldown: boolean;
   isGentlemanRuleViolation: boolean;
   isRolling: boolean;
   useAppDice: boolean;
@@ -259,6 +263,7 @@ function TurnActionButtons({
   onGentlemanRule: () => void;
   onEndTurn: () => void;
 }) {
+  const endTurnDisabled = isPending || isEndTurnCooldown;
   if (isFirstRoll) {
     return (
       <CardFooter className="mt-auto flex flex-col gap-2 px-4 py-3 sm:flex-row sm:px-6 sm:py-4">
@@ -279,7 +284,7 @@ function TurnActionButtons({
   }
 
   return (
-    <CardFooter className="mt-auto flex flex-col gap-2 px-4 py-3 sm:flex-row sm:px-6 sm:py-4">
+    <CardFooter className="mt-auto flex flex-col gap-4 px-4 py-3 sm:flex-row sm:gap-2 sm:px-6 sm:py-4">
       {canReRoll && (
         <Button
           variant={isStairsRoll ? "outline" : "default"}
@@ -293,9 +298,9 @@ function TurnActionButtons({
       )}
       {isStairsRoll ? (
         <Button
-          className="w-full h-12 sm:h-10 sm:flex-1 bg-green-600 hover:bg-green-700 text-white"
+          className={`w-full h-12 sm:h-10 sm:flex-1 bg-green-600 hover:bg-green-700 text-white${canReRoll ? " max-sm:mt-1" : ""}`}
           onClick={onAwardSips}
-          disabled={isPending}
+          disabled={endTurnDisabled}
         >
           {isPending ? (
             <Loader2 className="size-4 animate-spin" />
@@ -307,9 +312,9 @@ function TurnActionButtons({
       ) : (
         <Button
           variant={canReRoll ? "secondary" : "default"}
-          className="w-full h-12 sm:h-10 sm:flex-1"
+          className={`w-full h-12 sm:h-10 sm:flex-1${canReRoll ? " max-sm:mt-1" : ""}`}
           onClick={isGentlemanRuleViolation ? onGentlemanRule : onEndTurn}
-          disabled={isPending}
+          disabled={endTurnDisabled}
         >
           {isPending ? (
             <Loader2 className="size-4 animate-spin" />
@@ -482,6 +487,39 @@ export function PlayerTurnCard({
   const [awardSipsOpen, setAwardSipsOpen] = useState(false);
   const [gentlemanRuleOpen, setGentlemanRuleOpen] = useState(false);
 
+  const [isEndTurnCooldown, setIsEndTurnCooldown] = useState(false);
+  const endTurnCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevParticipantIdRef = useRef<number | null>(null);
+
+  function startEndTurnCooldown() {
+    setIsEndTurnCooldown(true);
+    if (endTurnCooldownRef.current) {
+      clearTimeout(endTurnCooldownRef.current);
+    }
+    endTurnCooldownRef.current = setTimeout(() => {
+      endTurnCooldownRef.current = null;
+      setIsEndTurnCooldown(false);
+    }, END_TURN_COOLDOWN_MS);
+  }
+
+  useEffect(() => {
+    if (
+      prevParticipantIdRef.current !== null &&
+      prevParticipantIdRef.current !== oCurrentParticipantId
+    ) {
+      startEndTurnCooldown();
+    }
+    prevParticipantIdRef.current = oCurrentParticipantId;
+  }, [oCurrentParticipantId]);
+
+  useEffect(() => {
+    return () => {
+      if (endTurnCooldownRef.current) {
+        clearTimeout(endTurnCooldownRef.current);
+      }
+    };
+  }, []);
+
   // Rolling animation state
   const [rollingIndices, setRollingIndices] = useState<Set<number>>(new Set());
   const rollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -587,6 +625,7 @@ export function PlayerTurnCard({
   }
 
   function handleEndTurn() {
+    startEndTurnCooldown();
     suppressGameSync();
     startTransition(async () => {
       try {
@@ -599,6 +638,7 @@ export function PlayerTurnCard({
   }
 
   function handleAwardSips(targetParticipantId: number) {
+    startEndTurnCooldown();
     suppressGameSync();
     startTransition(async () => {
       try {
@@ -694,6 +734,7 @@ export function PlayerTurnCard({
           diceToReRoll={diceToReRoll}
           stairsSipsToAward={stairsSipsToAward}
           isPending={effectivePending}
+          isEndTurnCooldown={isEndTurnCooldown}
           isGentlemanRuleViolation={isGentlemanRuleViolation}
           isRolling={isRolling}
           useAppDice={useAppDice}

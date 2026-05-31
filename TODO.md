@@ -22,6 +22,7 @@
 - [x] Add admin debug panel to /games page for ending in-progress games (see `games-debug-panel.tsx` + `endGameSessionAction`) ([9976301](https://github.com/arumie/three-dice-game/commit/9976301))
 - [x] Show "X games in progress" banner on home page above the new-game form, linking to /games (see `new-game-form.tsx` `inProgressCount` prop)
 - [x] Improve new game form UX: player stats info box, full-width player fields with inline verify indicators, and smaller mobile input font size
+- [x] Add a short cooldown on the "End turn" to prevent accidentally ending the next players turn by mistake.
 
 ### TODO
 
@@ -40,7 +41,7 @@
 
 #### Easy
 
-- [ ] Add a short cooldown on the "End turn" to prevent accidentally ending the next players turn by mistake.
+- [ ] 
 
 ## Bugs
 
@@ -62,6 +63,7 @@
 
 ### Completed
 - [x] Add unit tests for game session mapping functions to ensure they dont break. ([78d1afe](https://github.com/arumie/three-dice-game/commit/78d1afe))
+- [x] Add some distance between the "Roll Dice" and "End Turn" buttons on mobile.
 
 ### TODO
 - [ ] Refactor the components for player-turn-card, game-state-card, round-info-card, to be more composable and reusable
@@ -72,4 +74,3 @@
 - [ ] Ensure that the game session can handle up to 20 players in the UI
 - [ ] Add playwright e2e tests for the game session
 - [ ] Split debug-panel into multiple smaller components
-- [ ] Add some distance between the "Roll Dice" and "End Turn" buttons on mobile.
