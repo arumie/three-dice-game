@@ -344,64 +344,68 @@ export function NewGameForm({
               </CardDescription>
             </CardHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)}>
+              <div>
                 <CardContent className="flex flex-col gap-5 px-4 sm:gap-6 sm:px-6">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Game Name</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g. Friday Night Dice"
-                            autoComplete="off"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Game Password</FormLabel>
-                        <InputGroup>
+                  <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Game Name</FormLabel>
                           <FormControl>
-                            <InputGroupInput
-                              type={showPassword ? "text" : "password"}
-                              placeholder="Enter a password"
-                              autoComplete="current-password"
+                            <Input
+                              placeholder="e.g. Friday Night Dice"
+                              autoComplete="off"
                               {...field}
                             />
                           </FormControl>
-                          <InputGroupAddon align="inline-end">
-                            <InputGroupButton
-                              size="icon-xs"
-                              onClick={() => setShowPassword((v) => !v)}
-                            >
-                              {showPassword ? (
-                                <EyeOff className="size-4" />
-                              ) : (
-                                <Eye className="size-4" />
-                              )}
-                              <span className="sr-only">
-                                {showPassword ? "Hide" : "Show"} password
-                              </span>
-                            </InputGroupButton>
-                          </InputGroupAddon>
-                        </InputGroup>
-                        <FormDescription className="text-xs sm:text-sm">
-                          Required to access the game session.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </form>
+
+                  <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <FormField
+                      control={form.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Game Password</FormLabel>
+                          <InputGroup>
+                            <FormControl>
+                              <InputGroupInput
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Enter a password"
+                                autoComplete="current-password"
+                                {...field}
+                              />
+                            </FormControl>
+                            <InputGroupAddon align="inline-end">
+                              <InputGroupButton
+                                size="icon-xs"
+                                onClick={() => setShowPassword((v) => !v)}
+                              >
+                                {showPassword ? (
+                                  <EyeOff className="size-4" />
+                                ) : (
+                                  <Eye className="size-4" />
+                                )}
+                                <span className="sr-only">
+                                  {showPassword ? "Hide" : "Show"} password
+                                </span>
+                              </InputGroupButton>
+                            </InputGroupAddon>
+                          </InputGroup>
+                          <FormDescription className="text-xs sm:text-sm">
+                            Required to access the game session.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </form>
 
                   <div className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1">
@@ -449,7 +453,10 @@ export function NewGameForm({
 
                         return (
                           <div key={field.id} className="flex flex-col gap-1">
-                            <div className="flex flex-col gap-1 sm:flex-row sm:gap-2">
+                            <form
+                              className="flex flex-col gap-1 sm:flex-row sm:gap-2"
+                              onSubmit={(e) => e.preventDefault()}
+                            >
                               <FormField
                                 control={form.control}
                                 name={`players.${index}.name`}
@@ -545,7 +552,7 @@ export function NewGameForm({
                                   </Button>
                                 )}
                               </div>
-                            </div>
+                            </form>
                             {verifyStatus === "wrong_password" && (
                               <p className="text-xs text-destructive">
                                 Wrong password for this player
@@ -598,58 +605,65 @@ export function NewGameForm({
                     )}
                   />
                   {requiresCreationPassword && (
-                    <FormField
-                      control={form.control}
-                      name="creationPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Creation Password</FormLabel>
-                          <InputGroup>
-                            <FormControl>
-                              <InputGroupInput
-                                type={
-                                  showCreationPassword ? "text" : "password"
-                                }
-                                placeholder="Enter creation password"
-                                autoComplete="current-password"
-                                {...field}
-                              />
-                            </FormControl>
-                            <InputGroupAddon align="inline-end">
-                              <InputGroupButton
-                                size="icon-xs"
-                                onClick={() =>
-                                  setShowCreationPassword((v) => !v)
-                                }
-                              >
-                                {showCreationPassword ? (
-                                  <EyeOff className="size-4" />
-                                ) : (
-                                  <Eye className="size-4" />
-                                )}
-                                <span className="sr-only">
-                                  {showCreationPassword ? "Hide" : "Show"}{" "}
-                                  creation password
-                                </span>
-                              </InputGroupButton>
-                            </InputGroupAddon>
-                          </InputGroup>
-                          <FormDescription className="text-xs sm:text-sm">
-                            This game is still in development. A special
-                            password is required to create new games.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <form onSubmit={form.handleSubmit(onSubmit)}>
+                      <FormField
+                        control={form.control}
+                        name="creationPassword"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Creation Password</FormLabel>
+                            <InputGroup>
+                              <FormControl>
+                                <InputGroupInput
+                                  type={
+                                    showCreationPassword ? "text" : "password"
+                                  }
+                                  placeholder="Enter creation password"
+                                  autoComplete="current-password"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <InputGroupAddon align="inline-end">
+                                <InputGroupButton
+                                  size="icon-xs"
+                                  onClick={() =>
+                                    setShowCreationPassword((v) => !v)
+                                  }
+                                >
+                                  {showCreationPassword ? (
+                                    <EyeOff className="size-4" />
+                                  ) : (
+                                    <Eye className="size-4" />
+                                  )}
+                                  <span className="sr-only">
+                                    {showCreationPassword ? "Hide" : "Show"}{" "}
+                                    creation password
+                                  </span>
+                                </InputGroupButton>
+                              </InputGroupAddon>
+                            </InputGroup>
+                            <FormDescription className="text-xs sm:text-sm">
+                              This game is still in development. A special
+                              password is required to create new games.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </form>
                   )}
                 </CardContent>
                 <CardFooter className="px-4 pt-2 pb-5 sm:px-6 sm:pb-6">
-                  <Button type="submit" size="lg" className="w-full">
+                  <Button
+                    type="button"
+                    size="lg"
+                    className="w-full"
+                    onClick={form.handleSubmit(onSubmit)}
+                  >
                     Start Game
                   </Button>
                 </CardFooter>
-              </form>
+              </div>
             </Form>
           </>
         )}
