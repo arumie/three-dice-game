@@ -1,5 +1,5 @@
 import { HomeButton } from "@/components/home-button";
-import { PlayerSummaryCard } from "@/components/players-list/player-summary-card";
+import { PlayersList } from "@/components/players-list/players-list";
 import { getAllGames, getAllPlayers } from "@/lib/cached-queries";
 import {
   accumulateStats,
@@ -7,6 +7,7 @@ import {
   emptyAggregatedStats,
 } from "@/lib/game-helpers";
 import type { AggregatedPlayerStats } from "@/lib/models";
+import { comparePlayersBySipsDrunk } from "@/lib/pagination";
 
 export default async function PlayersPage() {
   const [players, games] = await Promise.all([getAllPlayers(), getAllGames()]);
@@ -48,20 +49,17 @@ export default async function PlayersPage() {
 
   const playerRows = players
     .map((player) => ({
-      player,
+      player: { id: player.id, username: player.username },
+      memberSince: player.createdAt.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }),
       stats:
         statsByPlayerId.get(player.id) ??
         emptyAggregatedStats(player.username, player.username),
     }))
-    .sort((a, b) => {
-      if (b.stats.gamesWon !== a.stats.gamesWon)
-        return b.stats.gamesWon - a.stats.gamesWon;
-      if (b.stats.roundsWon !== a.stats.roundsWon)
-        return b.stats.roundsWon - a.stats.roundsWon;
-      if (b.stats.sipsDrunk !== a.stats.sipsDrunk)
-        return b.stats.sipsDrunk - a.stats.sipsDrunk;
-      return a.player.username.localeCompare(b.player.username);
-    });
+    .sort(comparePlayersBySipsDrunk);
 
   return (
     <div className="flex flex-1 flex-col items-center px-4 py-8 sm:px-6 md:py-12">
@@ -76,20 +74,7 @@ export default async function PlayersPage() {
         {playerRows.length === 0 ? (
           <p className="text-muted-foreground">No registered players yet.</p>
         ) : (
-          <div className="flex flex-col gap-2">
-            {playerRows.map(({ player, stats }) => (
-              <PlayerSummaryCard
-                key={player.id}
-                username={player.username}
-                memberSince={player.createdAt.toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
-                stats={stats}
-              />
-            ))}
-          </div>
+          <PlayersList playerRows={playerRows} />
         )}
       </div>
     </div>

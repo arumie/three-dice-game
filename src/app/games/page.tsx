@@ -1,7 +1,7 @@
 import { Users } from "lucide-react";
 import Link from "next/link";
-import { GameListCard } from "@/components/games-list/game-list-card";
 import { GamesDebugPanel } from "@/components/games-list/games-debug-panel";
+import { GamesListSections } from "@/components/games-list/games-list-sections";
 import {
   type GlobalStats,
   GlobalStatsCard,
@@ -17,7 +17,8 @@ import {
   getParticipantName,
   getUsernameById,
 } from "@/lib/game-helpers";
-import type { AggregatedPlayerStats, GameModel } from "@/lib/models";
+import type { AggregatedPlayerStats } from "@/lib/models";
+import { compareGamesByLastActivity } from "@/lib/pagination";
 
 export default async function GamesPage() {
   const games = await getAllGames();
@@ -78,19 +79,12 @@ export default async function GamesPage() {
 
   const playerStats = Array.from(playerStatsMap.values());
 
-  // Split into in-progress and completed, each sorted most recent first
-  const byRecent = (a: { session: GameModel }, b: { session: GameModel }) => {
-    const aTime = a.session.createdAt?.getTime() ?? 0;
-    const bTime = b.session.createdAt?.getTime() ?? 0;
-    return bTime - aTime;
-  };
-
   const inProgressData = gameData
     .filter((g) => g.session.status !== "completed")
-    .sort(byRecent);
+    .sort(compareGamesByLastActivity);
   const completedData = gameData
     .filter((g) => g.session.status === "completed")
-    .sort(byRecent);
+    .sort(compareGamesByLastActivity);
 
   return (
     <div className="flex flex-1 flex-col items-center px-4 py-8 sm:px-6 md:py-12">
@@ -118,30 +112,11 @@ export default async function GamesPage() {
           <p className="text-muted-foreground">No games yet.</p>
         )}
 
-        {inProgressData.length > 0 && (
-          <div className="flex flex-col gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground sm:text-base">
-              In Progress ({inProgressData.length})
-            </h2>
-            {inProgressData.map(({ session, stats }) => (
-              <GameListCard key={session.id} session={session} stats={stats} />
-            ))}
-          </div>
-        )}
-
-        {inProgressData.length > 0 && completedData.length > 0 && (
-          <hr className="border-border" />
-        )}
-
-        {completedData.length > 0 && (
-          <div className="flex flex-col gap-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground sm:text-base">
-              Completed ({completedData.length})
-            </h2>
-            {completedData.map(({ session, stats }) => (
-              <GameListCard key={session.id} session={session} stats={stats} />
-            ))}
-          </div>
+        {(inProgressData.length > 0 || completedData.length > 0) && (
+          <GamesListSections
+            inProgressData={inProgressData}
+            completedData={completedData}
+          />
         )}
       </div>
 

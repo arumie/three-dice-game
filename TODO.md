@@ -65,6 +65,7 @@
 ### Completed
 - [x] Add unit tests for game session mapping functions to ensure they dont break. ([78d1afe](https://github.com/arumie/three-dice-game/commit/78d1afe))
 - [x] Add some distance between the "Roll Dice" and "End Turn" buttons on mobile.
+- [x] Add pagination to the games and players list page with Load more (sort games by last activity, sort players by sips drunk)
 
 ### TODO
 - [ ] Refactor the components for player-turn-card, game-state-card, round-info-card, to be more composable and reusable
@@ -75,4 +76,3 @@
 - [ ] Ensure that the game session can handle up to 20 players in the UI
 - [ ] Add playwright e2e tests for the game session
 - [ ] Split debug-panel into multiple smaller components
-- [ ] Add pagination to the games list page
