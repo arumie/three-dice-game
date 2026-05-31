@@ -49,6 +49,8 @@ export const guestsTable = pgTable("guests", {
 export type GameSessionConfig = {
   name: string;
   randomTurnOrder: boolean;
+  /** Marks a throwaway game created from the admin debug panel for testing. */
+  isTest?: boolean;
 };
 
 // Game sessions table

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { List } from "lucide-react";
 import { NewGameForm } from "@/components/new-game-form";
+import { NewGameDebugPanel } from "@/components/new-game-debug-panel";
 import { getAllGames } from "@/lib/cached-queries";
 import { Button } from "@/components/ui/button";
 
@@ -33,6 +34,8 @@ export default async function Home() {
           </Button>
         </div>
       )}
+
+      <NewGameDebugPanel />
     </div>
   );
 }

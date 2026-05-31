@@ -12,6 +12,7 @@ import {
   Trash2,
   RotateCcw,
   UserRoundPlus,
+  FlaskConical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ import {
   invalidateCacheAction,
   getRawGameDataAction,
   deleteGameSessionAction,
+  deleteTestGameAction,
   reopenGameSessionAction,
   reassignGuestToPlayerAction,
 } from "@/app/actions";
@@ -68,7 +70,9 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
   const [reassignUsername, setReassignUsername] = useState("");
   const [reassignPassword, setReassignPassword] = useState("");
   const [reassignError, setReassignError] = useState<string | null>(null);
+  const [deleteTestOpen, setDeleteTestOpen] = useState(false);
   const isCompleted = session.status === "completed";
+  const isTest = session.config.isTest === true;
   const guestParticipants = session.participants.filter(
     (p) => p.playerType === "guest",
   );
@@ -109,6 +113,19 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
         router.push("/");
       } else {
         setDeleteError(result.error ?? "Something went wrong");
+      }
+    });
+  }
+
+  function handleDeleteTestGame() {
+    startTransition(async () => {
+      const result = await deleteTestGameAction(gameSessionId);
+      if (result.success) {
+        setDeleteTestOpen(false);
+        toast.success("Test game deleted");
+        router.push("/");
+      } else {
+        toast.error(result.error ?? "Something went wrong");
       }
     });
   }
@@ -250,8 +267,45 @@ export function DebugPanel({ session, gameSessionId }: DebugPanelProps) {
               Reassign
             </Button>
           )}
+          {isTest && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 px-2 text-xs text-destructive hover:text-destructive"
+              disabled={isPending}
+              onClick={() => setDeleteTestOpen(true)}
+            >
+              <FlaskConical className="size-3" />
+              End & Delete
+            </Button>
+          )}
         </div>
       )}
+
+      <AlertDialog open={deleteTestOpen} onOpenChange={setDeleteTestOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>End & delete test game</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes this test game and all of its data. This
+              action is irreversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                handleDeleteTestGame();
+              }}
+            >
+              {isPending ? "Deleting…" : "End & Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={deleteOpen}

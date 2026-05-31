@@ -155,6 +155,63 @@ export async function createGameAction(data: {
 }
 
 /**
+ * Create a throwaway "Test" game with 4 guest players (admin only).
+ * Used from the new-game-form debug panel for quick testing.
+ */
+export async function createTestGameAction(
+  adminPassword: string,
+): Promise<{ success: true; id: number } | { success: false; error: string }> {
+  const expected = process.env.ADMIN_PASSWORD;
+  if (!expected || adminPassword !== expected) {
+    return { success: false, error: "Invalid admin password" };
+  }
+
+  const session = await createGameSession({
+    ownerId: "local",
+    password: "test",
+    config: {
+      name: "Test Game",
+      randomTurnOrder: false,
+      isTest: true,
+    },
+  });
+
+  const testPlayerNames = ["Test 1", "Test 2", "Test 3", "Test 4"];
+  await Promise.all(
+    testPlayerNames.map(async (name) => {
+      const guest = await createGuest(name);
+      return createGuestParticipant(session.id, name, guest.id);
+    }),
+  );
+
+  await createRound(session.id);
+  await setGameAuthCookie(session.id, "test");
+  updateTag(ALL_GAMES_TAG);
+
+  return { success: true, id: session.id };
+}
+
+/**
+ * Delete a test game session. Restricted to games flagged as test games,
+ * so no admin password is required (it can never delete a real game).
+ */
+export async function deleteTestGameAction(
+  gameSessionId: number,
+): Promise<{ success: boolean; error?: string }> {
+  const session = await getGameSessionById(gameSessionId);
+  if (!session) {
+    return { success: false, error: "Game session not found" };
+  }
+  if (!session.config.isTest) {
+    return { success: false, error: "Not a test game" };
+  }
+  await deleteGameSession(gameSessionId);
+  updateTag(gameSessionTag(gameSessionId));
+  updateTag(ALL_GAMES_TAG);
+  return { success: true };
+}
+
+/**
  * Verify a game password and set an HttpOnly auth cookie on success.
  */
 export async function verifyGamePasswordAction(
