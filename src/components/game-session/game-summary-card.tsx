@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { PlayerName } from "@/components/player-name";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -295,6 +296,10 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
         </h3>
         <div className="flex flex-col gap-2">
           {sortedStats.map((s, idx) => {
+            const participant = session.participants.find(
+              (p) => p.id === s.participantId,
+            );
+            const isRetired = participant?.retiredAfterRoundNumber != null;
             const isWinner =
               s.participantId === winner.participantId && s.roundsWon > 0;
             const isLoser =
@@ -341,12 +346,20 @@ export function GameSummaryCard({ session, stats }: GameSummaryCardProps) {
                 </div>
 
                 {/* Name */}
-                <span className="flex-1 truncate text-sm font-medium sm:text-base sm:font-semibold">
+                <span className="flex flex-1 items-center gap-2 truncate text-sm font-medium sm:text-base sm:font-semibold">
                   <PlayerName
                     participantId={s.participantId}
                     participants={session.participants}
                     linked
                   />
+                  {isRetired && (
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      Retired
+                      {participant.retiredAfterRoundNumber != null
+                        ? ` · R${participant.retiredAfterRoundNumber}`
+                        : ""}
+                    </Badge>
+                  )}
                 </span>
 
                 {/* Stats */}

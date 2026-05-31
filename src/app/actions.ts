@@ -10,11 +10,15 @@ import {
   createRegisteredParticipant,
   deleteGameSession,
   findDuplicateInProgressGame,
+  getFullGameState,
+  getGameParticipant,
   getGameParticipantById,
   getGameSessionById,
   getPlayerByUsername,
   reassignParticipantToPlayer,
   reopenGameSession,
+  retireParticipant,
+  unretireParticipant,
 } from "@/db/queries";
 import { getSyncSenderId, publishGameUpdate } from "@/lib/ably-server";
 import {
@@ -24,13 +28,22 @@ import {
   playerTag,
 } from "@/lib/cache-tags";
 import { requireGameAuth, setGameAuthCookie } from "@/lib/game-auth";
+import { getParticipantName } from "@/lib/game-helpers";
 import {
   createRound,
   endCurrentTurn,
   getLatestRound,
   recordRoll,
 } from "@/lib/game-service";
+import type { ParticipantWithPlayer } from "@/lib/models";
 import { hashPlayerPassword, verifyPlayerPassword } from "@/lib/player-auth";
+import {
+  assertBetweenRounds,
+  countActiveForNextRound,
+  isParticipantActiveForNextRound,
+  MAX_PLAYERS,
+  MIN_PLAYERS,
+} from "@/lib/roster";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_-]+( [a-zA-Z0-9_-]+)*$/;
 const USERNAME_MAX_LENGTH = 30;
@@ -307,9 +320,30 @@ export async function startRoundAction(data: {
   startingParticipantId?: number;
 }) {
   const senderId = await getSyncSenderId();
-  // Fetch session for auth — createRound does its own parallel fetch internally
-  const session = await getGameSessionById(data.gameSessionId);
+  const [session, round, state] = await Promise.all([
+    getGameSessionById(data.gameSessionId),
+    getLatestRound(data.gameSessionId),
+    getFullGameState(data.gameSessionId),
+  ]);
   await requireGameAuth(data.gameSessionId, session ?? undefined);
+
+  if (session?.completedAt) {
+    throw new Error("Game is already completed");
+  }
+  const between = assertBetweenRounds(round);
+  if (!between.ok) {
+    throw new Error(between.error);
+  }
+  if (state) {
+    const activeCount = countActiveForNextRound(
+      state.participants,
+      between.completedRoundNumber,
+    );
+    if (activeCount < MIN_PLAYERS) {
+      throw new Error("Not enough active players to start a round");
+    }
+  }
+
   await createRound(data.gameSessionId, data.startingParticipantId);
   updateTag(gameSessionTag(data.gameSessionId));
   updateTag(ALL_GAMES_TAG);
@@ -477,5 +511,232 @@ export async function reassignGuestToPlayerAction(
   updateTag(ALL_GAMES_TAG);
   publishGameUpdate(participant.gameSessionId, senderId);
 
+  return { success: true };
+}
+
+function participantNamesMatch(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+function findActiveNameDuplicate(
+  participants: ParticipantWithPlayer[],
+  name: string,
+  completedRoundNumber: number,
+  excludeParticipantId?: number,
+): boolean {
+  const trimmed = name.trim();
+  return participants.some(
+    (p) =>
+      p.id !== excludeParticipantId &&
+      isParticipantActiveForNextRound(p, completedRoundNumber) &&
+      participantNamesMatch(getParticipantName(p), trimmed),
+  );
+}
+
+type RosterContext =
+  | {
+      ok: true;
+      participants: ParticipantWithPlayer[];
+      completedRoundNumber: number;
+    }
+  | { ok: false; error: string };
+
+async function getRosterChangeContext(
+  gameSessionId: number,
+): Promise<RosterContext> {
+  const [session, round, state] = await Promise.all([
+    getGameSessionById(gameSessionId),
+    getLatestRound(gameSessionId),
+    getFullGameState(gameSessionId),
+  ]);
+
+  if (!session || !state) {
+    return { ok: false, error: "Game session not found" };
+  }
+  if (session.completedAt) {
+    return { ok: false, error: "Game is already completed" };
+  }
+
+  const between = assertBetweenRounds(round);
+  if (!between.ok) {
+    return { ok: false, error: between.error };
+  }
+
+  return {
+    ok: true,
+    participants: state.participants,
+    completedRoundNumber: between.completedRoundNumber,
+  };
+}
+
+function publishRosterUpdate(
+  gameSessionId: number,
+  senderId: string | null | undefined,
+) {
+  updateTag(gameSessionTag(gameSessionId));
+  updateTag(ALL_GAMES_TAG);
+  publishGameUpdate(gameSessionId, senderId ?? undefined);
+}
+
+/**
+ * Add a player to an in-progress game between rounds.
+ */
+export async function addPlayerToGameAction(data: {
+  gameSessionId: number;
+  name: string;
+  playerId?: number;
+  playerPassword?: string;
+}): Promise<
+  { success: true; participantId: number } | { success: false; error: string }
+> {
+  const senderId = await getSyncSenderId();
+  await requireGameAuth(data.gameSessionId);
+
+  const ctx = await getRosterChangeContext(data.gameSessionId);
+  if (!ctx.ok) {
+    return { success: false, error: ctx.error };
+  }
+
+  const { participants, completedRoundNumber } = ctx;
+  const nextRoundNumber = completedRoundNumber + 1;
+  const activeCount = countActiveForNextRound(
+    participants,
+    completedRoundNumber,
+  );
+
+  if (activeCount >= MAX_PLAYERS) {
+    return { success: false, error: `Maximum ${MAX_PLAYERS} players allowed` };
+  }
+
+  const trimmedName = data.name.trim();
+  if (!trimmedName) {
+    return { success: false, error: "Player name is required" };
+  }
+
+  if (
+    findActiveNameDuplicate(participants, trimmedName, completedRoundNumber)
+  ) {
+    return {
+      success: false,
+      error: "A player with that name is already active",
+    };
+  }
+
+  if (data.playerId != null) {
+    const retiredMatch = participants.find(
+      (p) => p.playerId === data.playerId && p.retiredAfterRoundNumber != null,
+    );
+    if (retiredMatch) {
+      const updated = await unretireParticipant(
+        retiredMatch.id,
+        nextRoundNumber,
+      );
+      if (!updated) {
+        return { success: false, error: "Failed to re-add player" };
+      }
+      publishRosterUpdate(data.gameSessionId, senderId);
+      return { success: true, participantId: updated.id };
+    }
+
+    const existing = await getGameParticipant(
+      data.gameSessionId,
+      data.playerId,
+    );
+    if (existing && existing.retiredAfterRoundNumber == null) {
+      return {
+        success: false,
+        error: "That registered player is already in this game",
+      };
+    }
+
+    const participant = await createRegisteredParticipant(
+      data.gameSessionId,
+      data.playerId,
+      { firstRoundNumber: nextRoundNumber },
+    );
+    publishRosterUpdate(data.gameSessionId, senderId);
+    return { success: true, participantId: participant.id };
+  }
+
+  if (data.playerPassword) {
+    if (
+      trimmedName.length > USERNAME_MAX_LENGTH ||
+      !USERNAME_REGEX.test(trimmedName)
+    ) {
+      return { success: false, error: "Invalid username" };
+    }
+    const existing = await getPlayerByUsername(trimmedName);
+    if (!existing) {
+      const passwordHash = await hashPlayerPassword(data.playerPassword);
+      const newPlayer = await createPlayer({
+        username: trimmedName,
+        passwordHash,
+      });
+      updateTag(playerTag(trimmedName));
+      updateTag(ALL_PLAYERS_TAG);
+      const participant = await createRegisteredParticipant(
+        data.gameSessionId,
+        newPlayer.id,
+        { firstRoundNumber: nextRoundNumber },
+      );
+      publishRosterUpdate(data.gameSessionId, senderId);
+      return { success: true, participantId: participant.id };
+    }
+  }
+
+  const guest = await createGuest(trimmedName);
+  const participant = await createGuestParticipant(
+    data.gameSessionId,
+    trimmedName,
+    guest.id,
+    { firstRoundNumber: nextRoundNumber },
+  );
+  publishRosterUpdate(data.gameSessionId, senderId);
+  return { success: true, participantId: participant.id };
+}
+
+/**
+ * Retire a player from an in-progress game between rounds.
+ */
+export async function retirePlayerAction(data: {
+  gameSessionId: number;
+  participantId: number;
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const senderId = await getSyncSenderId();
+  await requireGameAuth(data.gameSessionId);
+
+  const ctx = await getRosterChangeContext(data.gameSessionId);
+  if (!ctx.ok) {
+    return { success: false, error: ctx.error };
+  }
+
+  const participant = ctx.participants.find((p) => p.id === data.participantId);
+  if (!participant || participant.gameSessionId !== data.gameSessionId) {
+    return { success: false, error: "Participant not found" };
+  }
+  if (participant.retiredAfterRoundNumber != null) {
+    return { success: true };
+  }
+
+  const activeCount = countActiveForNextRound(
+    ctx.participants,
+    ctx.completedRoundNumber,
+  );
+  if (activeCount <= MIN_PLAYERS) {
+    return {
+      success: false,
+      error: `At least ${MIN_PLAYERS} active players are required`,
+    };
+  }
+
+  const updated = await retireParticipant(
+    data.participantId,
+    ctx.completedRoundNumber,
+  );
+  if (!updated) {
+    return { success: false, error: "Failed to retire player" };
+  }
+
+  publishRosterUpdate(data.gameSessionId, senderId);
   return { success: true };
 }

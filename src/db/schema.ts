@@ -76,6 +76,12 @@ export const gameParticipantsTable = pgTable(
     playerType: playerTypeEnum("player_type").notNull(),
     guestName: varchar("guest_name", { length: 50 }),
     joinedAt: timestamp("joined_at").notNull().defaultNow(),
+    /** When set, the participant has retired and is excluded from future rounds. */
+    retiredAt: timestamp("retired_at"),
+    /** First round this participant is eligible for (null = from round 1). */
+    firstRoundNumber: integer("first_round_number"),
+    /** Last round played before retiring (null = still active). */
+    retiredAfterRoundNumber: integer("retired_after_round_number"),
   },
   (t) => [
     unique("unique_participant").on(t.gameSessionId, t.playerId),

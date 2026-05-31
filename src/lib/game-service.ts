@@ -29,6 +29,7 @@ import type {
   PlayerGlobalStats,
   RoundModel,
 } from "./models";
+import { isParticipantActiveForNextRound, MIN_PLAYERS } from "./roster";
 
 /**
  * Get complete game state with all rounds, turns, and rolls.
@@ -207,7 +208,21 @@ export async function createRound(
     throw new Error(`Game session ${gameSessionId} not found`);
   }
 
-  const allParticipantIds = participants.map((p) => p.id);
+  if (latestRoundModel && latestRoundModel.status !== "completed") {
+    throw new Error(
+      "Cannot start a new round while the current round is in progress",
+    );
+  }
+
+  const latestCompletedRoundNumber = latestRoundModel?.roundNumber ?? 0;
+  const activeParticipants = participants.filter((p) =>
+    isParticipantActiveForNextRound(p, latestCompletedRoundNumber),
+  );
+  const allParticipantIds = activeParticipants.map((p) => p.id);
+
+  if (allParticipantIds.length < MIN_PLAYERS) {
+    throw new Error("Not enough active players to start a round");
+  }
 
   // Detect if previous round was all-safe (completed, no loser)
   const prevAllSafe =
@@ -229,6 +244,10 @@ export async function createRound(
   ) {
     startingParticipantId = latestRoundModel.losingParticipantIds[0];
   } else {
+    startingParticipantId = allParticipantIds[0];
+  }
+
+  if (!allParticipantIds.includes(startingParticipantId)) {
     startingParticipantId = allParticipantIds[0];
   }
 

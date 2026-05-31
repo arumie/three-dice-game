@@ -108,6 +108,9 @@ export function createParticipant(
     playerType: "guest",
     guestName: `Player ${nextId}`,
     joinedAt: DEFAULT_DATE,
+    retiredAt: null,
+    firstRoundNumber: null,
+    retiredAfterRoundNumber: null,
     playerUsername: null,
     ...overrides,
   };

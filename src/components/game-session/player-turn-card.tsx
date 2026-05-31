@@ -677,6 +677,7 @@ export function PlayerTurnCard({
       <RoundCompleteCard
         round={optimisticRound}
         participants={participants}
+        gameSessionId={gameSessionId}
         isPending={effectivePending}
         onStartRound={handleStartRound}
       />
@@ -765,6 +766,7 @@ export function PlayerTurnCard({
         onOpenChange={setAwardSipsOpen}
         sipsToAward={stairsSipsToAward}
         participants={participants}
+        playerOrder={optimisticRound.playerOrder}
         currentParticipantId={oCurrentParticipantId}
         onConfirm={handleAwardSips}
       />

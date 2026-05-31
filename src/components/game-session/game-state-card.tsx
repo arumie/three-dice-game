@@ -14,6 +14,7 @@ import {
   Toilet,
   TrendingDown,
   Trophy,
+  UserMinus,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -43,10 +44,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { formatStatus, getStatusVariant } from "@/lib/game-helpers";
+import {
+  formatStatus,
+  getStatusVariant,
+  isLeaderParticipantStats,
+  isTrailerParticipantStats,
+  sortParticipantStats,
+} from "@/lib/game-helpers";
 import { suppressGameSync } from "@/lib/game-sync";
 import type { GameModel, ParticipantStats } from "@/lib/models";
+import { isParticipantActiveForNextRound } from "@/lib/roster";
 import { BeerTracker } from "./beer-tracker";
 
 interface GameStateCardProps {
@@ -92,40 +101,40 @@ export function GameStateCard({
     (r) => r.status === "completed",
   ).length;
   const totalRounds = session.rounds.length;
+  const latestCompletedRoundNumber =
+    session.rounds.filter((r) => r.status === "completed").at(-1)
+      ?.roundNumber ?? 0;
 
-  // Sort stats for the leaderboard: fewest sips drunk = winning
-  const sortedStats = [...stats].sort((a, b) => {
-    if (b.roundsWon !== a.roundsWon) return b.roundsWon - a.roundsWon;
-    if (a.sipsDrunk !== b.sipsDrunk) return a.sipsDrunk - b.sipsDrunk;
-    return a.participantId - b.participantId;
-  });
+  const activeParticipantIds = new Set(
+    session.participants
+      .filter((p) =>
+        isParticipantActiveForNextRound(p, latestCompletedRoundNumber),
+      )
+      .map((p) => p.id),
+  );
 
-  // Determine leader/trailer/biggest drinker by comparing stats values
-  // so all tied players get the same designation
-  const topStats = sortedStats[0];
-  const bottomStats = sortedStats[sortedStats.length - 1];
-  const maxSipsDrunk = Math.max(...stats.map((s) => s.sipsDrunk));
+  const activeStats = stats.filter((s) =>
+    activeParticipantIds.has(s.participantId),
+  );
+  const retiredStats = stats.filter(
+    (s) => !activeParticipantIds.has(s.participantId),
+  );
 
-  function isLeaderStats(s: ParticipantStats) {
-    return (
-      s.roundsWon > 0 &&
-      s.roundsWon === topStats.roundsWon &&
-      s.sipsDrunk === topStats.sipsDrunk
-    );
+  const sortedActiveStats = sortParticipantStats(activeStats);
+  const sortedRetiredStats = sortParticipantStats(retiredStats);
+
+  const maxSipsDrunk = Math.max(0, ...activeStats.map((s) => s.sipsDrunk));
+  const maxRetiredSipsDrunk = Math.max(
+    0,
+    ...retiredStats.map((s) => s.sipsDrunk),
+  );
+
+  function isMostDrunkStats(s: ParticipantStats, amongActive: boolean) {
+    const max = amongActive ? maxSipsDrunk : maxRetiredSipsDrunk;
+    return s.sipsDrunk > 0 && s.sipsDrunk === max;
   }
 
-  function isTrailerStats(s: ParticipantStats) {
-    return (
-      sortedStats.length > 1 &&
-      s.roundsWon === bottomStats.roundsWon &&
-      s.sipsDrunk === bottomStats.sipsDrunk &&
-      !isLeaderStats(s)
-    );
-  }
-
-  function isMostDrunkStats(s: ParticipantStats) {
-    return s.sipsDrunk > 0 && s.sipsDrunk === maxSipsDrunk;
-  }
+  const activeCount = activeParticipantIds.size;
 
   async function handleEndGame() {
     suppressGameSync();
@@ -162,7 +171,7 @@ export function GameStateCard({
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Users className="size-3" />
-                    {session.participants.length}
+                    {activeCount}
                   </span>
                   <span className="text-muted-foreground/30">·</span>
                   <span>Round {totalRounds}</span>
@@ -260,6 +269,10 @@ export function GameStateCard({
                       <span className="text-muted-foreground">Trailer</span>
                     </div>
                     <div className="flex items-center gap-2">
+                      <UserMinus className="size-4 shrink-0 text-muted-foreground" />
+                      <span className="text-muted-foreground">Retired</span>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <Trophy className="size-4 shrink-0 text-primary" />
                       <span className="text-muted-foreground">Rounds won</span>
                     </div>
@@ -304,10 +317,10 @@ export function GameStateCard({
           </div>
 
           <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
-            {sortedStats.map((s, idx) => {
-              const isLeader = isLeaderStats(s);
-              const isTrailer = isTrailerStats(s);
-              const isMostDrunk = isMostDrunkStats(s);
+            {sortedActiveStats.map((s, idx) => {
+              const isLeader = isLeaderParticipantStats(s, sortedActiveStats);
+              const isTrailer = isTrailerParticipantStats(s, sortedActiveStats);
+              const isMostDrunk = isMostDrunkStats(s, true);
 
               return (
                 <div
@@ -412,6 +425,74 @@ export function GameStateCard({
               );
             })}
           </div>
+
+          {sortedRetiredStats.length > 0 && (
+            <>
+              <Separator className="my-4" />
+              <h3 className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <UserMinus className="size-3.5" />
+                Retired ({sortedRetiredStats.length})
+              </h3>
+              <div className="grid grid-cols-1 gap-1.5 opacity-90 sm:grid-cols-2 lg:grid-cols-3">
+                {sortedRetiredStats.map((s) => {
+                  const isMostDrunk = isMostDrunkStats(s, false);
+                  const participant = session.participants.find(
+                    (p) => p.id === s.participantId,
+                  );
+
+                  return (
+                    <div
+                      key={s.participantId}
+                      className="flex flex-col gap-2 rounded-xl border border-muted bg-muted/20 px-4 py-3"
+                    >
+                      <div className="mb-2 flex items-center gap-4">
+                        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                          <UserMinus className="size-4" />
+                        </div>
+                        <span className="min-w-0 flex-1 truncate text-base font-semibold text-muted-foreground">
+                          <PlayerName
+                            participantId={s.participantId}
+                            participants={session.participants}
+                          />
+                        </span>
+                        <Badge variant="outline" className="shrink-0 text-xs">
+                          Retired
+                          {participant?.retiredAfterRoundNumber != null
+                            ? ` · R${participant.retiredAfterRoundNumber}`
+                            : ""}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm tabular-nums sm:gap-4 sm:text-base">
+                        <span
+                          className="flex items-center gap-1 font-bold text-primary sm:gap-1.5"
+                          title="Rounds won"
+                        >
+                          <Trophy className={statIconSize} />
+                          {s.roundsWon}
+                        </span>
+                        <span
+                          className={`flex items-center gap-1 font-bold sm:gap-1.5 ${
+                            isMostDrunk
+                              ? "text-red-500"
+                              : "text-muted-foreground"
+                          }`}
+                          title="Sips drunk"
+                        >
+                          {isMostDrunk ? (
+                            <Skull className={statIconSize} />
+                          ) : (
+                            <Beer className={statIconSize} />
+                          )}
+                          {s.sipsDrunk}
+                        </span>
+                      </div>
+                      <BeerTracker sipsDrunk={s.sipsDrunk} />
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

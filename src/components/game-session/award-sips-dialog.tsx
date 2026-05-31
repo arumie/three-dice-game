@@ -21,6 +21,7 @@ interface AwardSipsDialogProps {
   onOpenChange: (open: boolean) => void;
   sipsToAward: number;
   participants: ParticipantWithPlayer[];
+  playerOrder: number[];
   currentParticipantId: number;
   onConfirm: (targetParticipantId: number) => void;
 }
@@ -30,13 +31,15 @@ export function AwardSipsDialog({
   onOpenChange,
   sipsToAward,
   participants,
+  playerOrder,
   currentParticipantId,
   onConfirm,
 }: AwardSipsDialogProps) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
+  const eligibleIds = new Set(playerOrder);
   const otherPlayers = participants.filter(
-    (p) => p.id !== currentParticipantId,
+    (p) => p.id !== currentParticipantId && eligibleIds.has(p.id),
   );
 
   function handleConfirm() {

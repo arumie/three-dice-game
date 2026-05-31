@@ -1,18 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  AlertCircle,
-  Check,
-  Eye,
-  EyeOff,
-  Info,
-  Loader2,
-  Plus,
-  ShieldCheck,
-  UserPlus,
-  X,
-} from "lucide-react";
+import { Eye, EyeOff, Info, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -25,6 +14,7 @@ import {
   verifyOrRegisterPlayerAction,
 } from "@/app/actions";
 import { DiceLoading } from "@/components/dice-loading";
+import { VerifyIndicator } from "@/components/player-verify-indicator";
 import { ThreeDiceLogo } from "@/components/three-dice-logo";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +42,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { Switch } from "@/components/ui/switch";
+import type { PlayerVerifyStatus } from "@/lib/player-validation";
 
 const MIN_PLAYERS = 3;
 const MAX_PLAYERS = 20;
@@ -118,45 +109,6 @@ const DEFAULT_PLAYERS = Array.from({ length: MIN_PLAYERS }, () => ({
 interface NewGameFormProps {
   requiresCreationPassword?: boolean;
   inProgressCount?: number;
-}
-
-type PlayerVerifyStatus = NonNullable<
-  NewGameFormValues["players"][number]["verifyStatus"]
->;
-
-function VerifyIndicator({ status }: { status: PlayerVerifyStatus }) {
-  let content: React.ReactNode = null;
-
-  switch (status) {
-    case "verifying":
-      content = (
-        <Loader2 className="size-4 animate-spin text-muted-foreground" />
-      );
-      break;
-    case "verified":
-      content = <Check className="size-4 text-green-600 dark:text-green-400" />;
-      break;
-    case "admin_verified":
-      content = (
-        <ShieldCheck className="size-4 text-green-600 dark:text-green-400" />
-      );
-      break;
-    case "available":
-      content = (
-        <UserPlus className="size-4 text-blue-600 dark:text-blue-400" />
-      );
-      break;
-    case "wrong_password":
-    case "invalid_username":
-      content = <AlertCircle className="size-4 text-destructive" />;
-      break;
-  }
-
-  return (
-    <span className="flex size-4 shrink-0 items-center justify-center">
-      {content}
-    </span>
-  );
 }
 
 export function NewGameForm({

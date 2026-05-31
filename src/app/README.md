@@ -50,6 +50,8 @@ All game mutations are handled through Next.js server actions:
 | `rollDiceAction` | Record a dice roll (first roll or re-roll) |
 | `endTurnAction` | End the current player's turn |
 | `startRoundAction` | Start a new round |
+| `addPlayerToGameAction` | Add a player between rounds (sets `firstRoundNumber`) |
+| `retirePlayerAction` | Retire a player between rounds (sets `retiredAfterRoundNumber`) |
 | `endGameAction` | Mark a game session as completed |
 | `invalidateCacheAction` | Manually invalidate cached game data |
 | `getRawGameDataAction` | Debug action returning raw database rows |

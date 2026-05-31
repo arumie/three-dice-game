@@ -25,12 +25,14 @@ export async function createGameParticipant(
 export async function createRegisteredParticipant(
   gameSessionId: number,
   playerId: number,
+  options?: { firstRoundNumber?: number },
 ): Promise<SelectGameParticipant> {
   return createGameParticipant({
     gameSessionId,
     playerId,
     playerType: "registered",
     guestName: null,
+    firstRoundNumber: options?.firstRoundNumber ?? null,
   });
 }
 
@@ -41,6 +43,7 @@ export async function createGuestParticipant(
   gameSessionId: number,
   guestName: string,
   guestId?: number,
+  options?: { firstRoundNumber?: number },
 ): Promise<SelectGameParticipant> {
   return createGameParticipant({
     gameSessionId,
@@ -48,6 +51,7 @@ export async function createGuestParticipant(
     guestId: guestId ?? null,
     playerType: "guest",
     guestName,
+    firstRoundNumber: options?.firstRoundNumber ?? null,
   });
 }
 
@@ -113,6 +117,44 @@ export async function reassignParticipantToPlayer(
       playerType: "registered",
       guestId: null,
       guestName: null,
+    })
+    .where(eq(gameParticipantsTable.id, participantId))
+    .returning();
+  return updated || null;
+}
+
+/**
+ * Retire a participant from a game session.
+ * Sets round boundary fields and retiredAt while keeping historical data.
+ */
+export async function retireParticipant(
+  participantId: number,
+  retiredAfterRoundNumber: number,
+): Promise<SelectGameParticipant | null> {
+  const [updated] = await db
+    .update(gameParticipantsTable)
+    .set({
+      retiredAt: new Date(),
+      retiredAfterRoundNumber,
+    })
+    .where(eq(gameParticipantsTable.id, participantId))
+    .returning();
+  return updated || null;
+}
+
+/**
+ * Un-retire a participant for a mid-game re-add (registered players only).
+ */
+export async function unretireParticipant(
+  participantId: number,
+  firstRoundNumber: number,
+): Promise<SelectGameParticipant | null> {
+  const [updated] = await db
+    .update(gameParticipantsTable)
+    .set({
+      retiredAt: null,
+      retiredAfterRoundNumber: null,
+      firstRoundNumber,
     })
     .where(eq(gameParticipantsTable.id, participantId))
     .returning();

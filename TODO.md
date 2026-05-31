@@ -27,6 +27,7 @@
 - [x] Make sure that "In progress" games that haven't had any activity for 12 hours are automatically ended (using the last activity as the End Time) (daily Vercel cron `/api/cron/end-stale-games` + `endStaleInProgressGames`/`getGameLastActivity`)
 - [x] Add "ties" to global stats so if multiple players have the same number of wins/losses/sips drunk/etc. it's counted as a tie and shown like that in the global stats card (see `global-stats-card.tsx` `buildAward` winners array + "Tie" badge)
 - [x] Add a "Players" page that shows all players and a brief summary of their stats (see `src/app/players/page.tsx` + `player-summary-card.tsx`)
+- [x] Add and retire players between rounds with roster round boundaries (`firstRoundNumber`/`retiredAfterRoundNumber`), Game Overview retired section, and trailer-at-start fix
 
 ### TODO
 
@@ -35,7 +36,6 @@
 
 #### Medium
 - [ ] Add player/spectator mode selection when joining a game session. Choose whether you play as a single player or control all players. Lock action buttons on devices whose turn it isn't, so only the active player's device can interact.
-- [ ] Players can be added to a game session after it has started (not during a round, but between rounds)
 - [ ] Stats - Relative stats like avg. worst roller (i.e. Simon)
 - [ ] Add graphs showing progress over rounds for every player  - Should be able to switch between what stat to show (sips, special rolls, rounds won/lost) 
 - [ ] Add profile settings for players to change their display name and add profile picture

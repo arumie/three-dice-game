@@ -9,9 +9,24 @@ import {
   ShieldAlert,
   ShieldCheck,
   TrendingDown,
+  UserMinus,
+  UserPlus,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, useTransition } from "react";
+import { toast } from "sonner";
+import { retirePlayerAction } from "@/app/actions";
 import { PlayerName } from "@/components/player-name";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,11 +36,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import {
   formatNamesList,
   formatSpecialRoll,
   getNameById,
+  getParticipantName,
 } from "@/lib/game-helpers";
 import {
   computeLowestRollCounts,
@@ -33,7 +55,9 @@ import {
   getThreeOfAKindSips,
 } from "@/lib/game-utils";
 import type { ParticipantWithPlayer, RoundModel } from "@/lib/models";
+import { isParticipantActiveForNextRound, MIN_PLAYERS } from "@/lib/roster";
 import { cn } from "@/lib/utils";
+import { AddPlayerDialog } from "./add-player-dialog";
 import { DiceDisplay } from "./dice-display";
 import { TiebreakerDialog } from "./tiebreaker-dialog";
 
@@ -333,11 +357,194 @@ function RoundCompleteFooter({
   );
 }
 
+function RosterChangeBanner({
+  icon: Icon,
+  children,
+  className,
+}: {
+  icon: typeof UserPlus;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex w-full items-center gap-2 rounded-md border px-3 py-2 text-sm",
+        className,
+      )}
+    >
+      <Icon className="size-4 shrink-0" />
+      <span className="text-muted-foreground">{children}</span>
+    </div>
+  );
+}
+
+function RoundRosterPanel({
+  round,
+  participants,
+  gameSessionId,
+  needsTiebreaker,
+  isPending,
+}: {
+  round: RoundModel;
+  participants: ParticipantWithPlayer[];
+  gameSessionId: number;
+  needsTiebreaker: boolean;
+  isPending: boolean;
+}) {
+  const router = useRouter();
+  const [addOpen, setAddOpen] = useState(false);
+  const [retireTarget, setRetireTarget] =
+    useState<ParticipantWithPlayer | null>(null);
+  const [isRetiring, startRetireTransition] = useTransition();
+
+  const activeParticipants = participants.filter((p) =>
+    isParticipantActiveForNextRound(p, round.roundNumber),
+  );
+  const canRetire =
+    !needsTiebreaker && activeParticipants.length > MIN_PLAYERS && !isPending;
+  const rosterLocked = needsTiebreaker || isPending;
+
+  const pendingJoins = participants.filter(
+    (p) => p.firstRoundNumber === round.roundNumber + 1,
+  );
+  const justRetired = participants.filter(
+    (p) => p.retiredAfterRoundNumber === round.roundNumber,
+  );
+
+  function handleRetireConfirm() {
+    if (!retireTarget) return;
+    startRetireTransition(async () => {
+      try {
+        const result = await retirePlayerAction({
+          gameSessionId,
+          participantId: retireTarget.id,
+        });
+        if (!result.success) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success(`${getParticipantName(retireTarget)} retired`);
+        setRetireTarget(null);
+        router.refresh();
+      } catch {
+        toast.error("Something went wrong. Please try again.");
+      }
+    });
+  }
+
+  return (
+    <>
+      <Separator className="my-2" />
+      <div className="flex w-full flex-col gap-3">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={rosterLocked}
+            onClick={() => setAddOpen(true)}
+          >
+            <UserPlus className="size-4" />
+            Add Player
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!canRetire}
+              >
+                <UserMinus className="size-4" />
+                Retire Player
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {activeParticipants.map((p) => (
+                <DropdownMenuItem
+                  key={p.id}
+                  onSelect={() => setRetireTarget(p)}
+                >
+                  {getParticipantName(p)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {pendingJoins.map((p) => (
+          <RosterChangeBanner
+            key={`join-${p.id}`}
+            icon={UserPlus}
+            className="border-primary/30 bg-primary/5"
+          >
+            <span className="font-semibold text-primary">
+              {getParticipantName(p)}
+            </span>
+            {` will join in Round ${p.firstRoundNumber}`}
+          </RosterChangeBanner>
+        ))}
+
+        {justRetired.map((p) => (
+          <RosterChangeBanner
+            key={`retire-${p.id}`}
+            icon={UserMinus}
+            className="border-muted-foreground/30 bg-muted/30"
+          >
+            <span className="font-semibold">{getParticipantName(p)}</span>
+            {` retired after Round ${p.retiredAfterRoundNumber}`}
+          </RosterChangeBanner>
+        ))}
+      </div>
+
+      <AddPlayerDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        gameSessionId={gameSessionId}
+        activeParticipants={activeParticipants}
+        onAdded={() => router.refresh()}
+      />
+
+      <AlertDialog
+        open={retireTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setRetireTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Retire player?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {retireTarget
+                ? `${getParticipantName(retireTarget)} will not play in Round ${round.roundNumber + 1}. Their stats from earlier rounds are kept.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isRetiring}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isRetiring}
+              onClick={(e) => {
+                e.preventDefault();
+                handleRetireConfirm();
+              }}
+            >
+              Retire Player
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
 // ─── Round Complete Card ─────────────────────────────────────────────────────
 
 interface RoundCompleteCardProps {
   round: RoundModel;
   participants: ParticipantWithPlayer[];
+  gameSessionId: number;
   isPending: boolean;
   onStartRound: (startingParticipantId?: number) => void;
 }
@@ -345,6 +552,7 @@ interface RoundCompleteCardProps {
 export function RoundCompleteCard({
   round,
   participants,
+  gameSessionId,
   isPending,
   onStartRound,
 }: RoundCompleteCardProps) {
@@ -424,6 +632,18 @@ export function RoundCompleteCard({
             </>
           )}
         </CardContent>
+
+        <Separator />
+
+        <div className="px-4 py-4 sm:px-6">
+          <RoundRosterPanel
+            round={round}
+            participants={participants}
+            gameSessionId={gameSessionId}
+            needsTiebreaker={needsTiebreaker}
+            isPending={isPending}
+          />
+        </div>
 
         <Separator />
 

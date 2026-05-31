@@ -241,9 +241,12 @@ export function computeParticipantStats(
       for (const roll of turn.rolls) {
         if (roll.specialRollType === "lowest") {
           s.lowestScoreCount += 1;
-          for (const [, ps] of statsMap) {
-            ps.lowestScoreSipsDrunk += 1;
-            ps.sipsDrunk += 1;
+          for (const pid of round.playerOrder) {
+            const ps = statsMap.get(pid);
+            if (ps) {
+              ps.lowestScoreSipsDrunk += 1;
+              ps.sipsDrunk += 1;
+            }
           }
         }
       }
@@ -293,10 +296,10 @@ export function computeParticipantStats(
       }
     }
 
-    // Everyone else "won" the round
-    for (const p of session.participants) {
-      if (!round.losingParticipantIds.includes(p.id)) {
-        const s = statsMap.get(p.id);
+    // Everyone in the round who wasn't a loser won the round
+    for (const pid of round.playerOrder) {
+      if (!round.losingParticipantIds.includes(pid)) {
+        const s = statsMap.get(pid);
         if (s) s.roundsWon += 1;
       }
     }
@@ -314,4 +317,48 @@ export function computeParticipantStats(
   }
 
   return Array.from(statsMap.values());
+}
+
+/** Sort participant stats for leaderboard display (most wins, fewest sips). */
+export function sortParticipantStats(
+  stats: ParticipantStats[],
+): ParticipantStats[] {
+  return [...stats].sort((a, b) => {
+    if (b.roundsWon !== a.roundsWon) return b.roundsWon - a.roundsWon;
+    if (a.sipsDrunk !== b.sipsDrunk) return a.sipsDrunk - b.sipsDrunk;
+    return a.participantId - b.participantId;
+  });
+}
+
+export function isLeaderParticipantStats(
+  s: ParticipantStats,
+  sortedStats: ParticipantStats[],
+): boolean {
+  if (sortedStats.length === 0) return false;
+  const top = sortedStats[0];
+  return (
+    s.roundsWon > 0 &&
+    s.roundsWon === top.roundsWon &&
+    s.sipsDrunk === top.sipsDrunk
+  );
+}
+
+export function isTrailerParticipantStats(
+  s: ParticipantStats,
+  sortedStats: ParticipantStats[],
+): boolean {
+  if (sortedStats.length <= 1) return false;
+  if (isLeaderParticipantStats(s, sortedStats)) return false;
+
+  const bottom = sortedStats[sortedStats.length - 1];
+  const isAtBottom =
+    s.roundsWon === bottom.roundsWon && s.sipsDrunk === bottom.sipsDrunk;
+  if (!isAtBottom) return false;
+
+  return sortedStats.some(
+    (other) =>
+      other.participantId !== s.participantId &&
+      (other.roundsWon > s.roundsWon ||
+        (other.roundsWon === s.roundsWon && other.sipsDrunk < s.sipsDrunk)),
+  );
 }

@@ -14,7 +14,13 @@ import Link from "next/link";
 import { PlayerName } from "@/components/player-name";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { formatStatus, getStatusVariant } from "@/lib/game-helpers";
+import {
+  formatStatus,
+  getStatusVariant,
+  isLeaderParticipantStats,
+  isTrailerParticipantStats,
+  sortParticipantStats,
+} from "@/lib/game-helpers";
 import type { GameModel, ParticipantStats } from "@/lib/models";
 
 interface GameListCardProps {
@@ -45,14 +51,7 @@ export function GameListCard({ session, stats }: GameListCardProps) {
     ? `/game-session/${session.id}/summary`
     : `/game-session/${session.id}`;
 
-  // Sort stats: most rounds won first, then fewest sips
-  const sortedStats = [...stats].sort((a, b) => {
-    if (b.roundsWon !== a.roundsWon) return b.roundsWon - a.roundsWon;
-    return a.sipsDrunk - b.sipsDrunk;
-  });
-
-  const leader = sortedStats[0];
-  const trailer = sortedStats[sortedStats.length - 1];
+  const sortedStats = sortParticipantStats(stats);
   const biggestDrinker = [...stats].sort(
     (a, b) => b.sipsDrunk - a.sipsDrunk,
   )[0];
@@ -109,12 +108,8 @@ export function GameListCard({ session, stats }: GameListCardProps) {
         <CardContent className="px-4 pb-4 pt-1 sm:px-5">
           <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
             {sortedStats.map((s, idx) => {
-              const isLeader =
-                s.participantId === leader?.participantId && s.roundsWon > 0;
-              const isTrailer =
-                s.participantId === trailer?.participantId &&
-                s.participantId !== leader?.participantId &&
-                sortedStats.length > 1;
+              const isLeader = isLeaderParticipantStats(s, sortedStats);
+              const isTrailer = isTrailerParticipantStats(s, sortedStats);
               const isMostDrunk =
                 s.participantId === biggestDrinker?.participantId &&
                 s.sipsDrunk > 0;
