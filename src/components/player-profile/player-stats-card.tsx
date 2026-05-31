@@ -1,17 +1,17 @@
 "use client";
 
 import {
-  Trophy,
+  Award,
   Beer,
-  Skull,
+  CircleArrowDown,
+  Crown,
   Dices,
   Footprints,
-  CircleArrowDown,
+  type LucideIcon,
+  Skull,
   Toilet,
   TrendingDown,
-  Crown,
-  Award,
-  type LucideIcon,
+  Trophy,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";

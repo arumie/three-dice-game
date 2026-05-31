@@ -1,10 +1,11 @@
 import { eq, getTableColumns } from "drizzle-orm";
+import type { ParticipantWithPlayer } from "@/lib/models";
 import { db } from "..";
 import {
   gameParticipantsTable,
   gameSessionsTable,
-  playerTurnsTable,
   playersTable,
+  playerTurnsTable,
   rollsTable,
   roundsTable,
   type SelectGameParticipant,
@@ -13,7 +14,6 @@ import {
   type SelectRoll,
   type SelectRound,
 } from "../schema";
-import type { ParticipantWithPlayer } from "@/lib/models";
 
 /**
  * Full game state with all related data
@@ -141,12 +141,13 @@ export async function getFullRound(roundId: number): Promise<FullRound | null> {
     rolls.sort((a, b) => a.rollNumber - b.rollNumber);
   }
 
-  // Combine turns with participants and rolls
-  const turnsWithData = turns.map((turn) => ({
-    turn,
-    participant: participantMap.get(turn.participantId)!,
-    rolls: rollsByTurnId.get(turn.id) || [],
-  }));
+  // Combine turns with participants and rolls.
+  // Skip any turn whose participant is missing (should not happen given FK constraints).
+  const turnsWithData = turns.flatMap((turn) => {
+    const participant = participantMap.get(turn.participantId);
+    if (!participant) return [];
+    return [{ turn, participant, rolls: rollsByTurnId.get(turn.id) || [] }];
+  });
 
   return {
     round,

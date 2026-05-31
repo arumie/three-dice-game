@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useTransition, type ReactNode } from "react";
-import { useSignals } from "@preact/signals-react/runtime";
 import { signal } from "@preact/signals-react";
-import { Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useSignals } from "@preact/signals-react/runtime";
+import { Eye, EyeOff, Loader2, Lock } from "lucide-react";
+import { type ReactNode, useEffect, useTransition } from "react";
+import { checkGameAuthAction, verifyGamePasswordAction } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,7 +21,6 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
-import { checkGameAuthAction, verifyGamePasswordAction } from "@/app/actions";
 
 // Signals for gate state (keyed per gameSessionId via the component)
 const isChecking = signal(true);

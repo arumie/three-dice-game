@@ -1,14 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import {
-  gameSessionsTable,
-  playerTurnsTable,
-  roundsTable,
-  type Dice,
-  type SelectPlayerTurn,
-  type SelectRoll,
-} from "../db/schema";
-import {
   createRoll as createRollQuery,
   getFullGameState,
   getGameParticipantsBySession,
@@ -22,6 +14,13 @@ import {
   getRollsBySession,
   getRoundsBySession,
 } from "../db/queries";
+import {
+  type Dice,
+  playerTurnsTable,
+  roundsTable,
+  type SelectPlayerTurn,
+  type SelectRoll,
+} from "../db/schema";
 import { createPlayerOrder, detectSpecialRoll } from "./game-utils";
 import { mapGame, mapRound } from "./mappers";
 import type {
@@ -429,9 +428,6 @@ export async function getParticipantStats(
   let lowestScoreSipsDrunk = 0;
   let tiebreakerWins = 0;
 
-  // We need all participants for lowest-score sip tracking
-  const allParticipants = await getGameParticipantsBySession(gameSessionId);
-
   // Collect mapped round models for tiebreaker detection
   const roundModels: RoundModel[] = [];
 
@@ -554,7 +550,7 @@ export async function getPlayerGlobalStats(
 
   for (const participation of participations) {
     const game = await getCompleteGame(participation.gameSessionId);
-    if (!game || game.status !== "completed") continue;
+    if (game?.status !== "completed") continue;
 
     gamesPlayed++;
 

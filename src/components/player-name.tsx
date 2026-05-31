@@ -1,6 +1,6 @@
 import Link from "next/link";
-import type { ParticipantWithPlayer } from "@/lib/models";
 import { getNameById, getUsernameById } from "@/lib/game-helpers";
+import type { ParticipantWithPlayer } from "@/lib/models";
 
 interface PlayerNameByIdProps {
   participantId: number;

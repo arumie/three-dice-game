@@ -1,8 +1,8 @@
 "use client";
 
-import { useGameSessionSync } from "@/hooks/use-game-session-sync";
 import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useGameSessionSync } from "@/hooks/use-game-session-sync";
 
 export function GameSessionSync({ gameSessionId }: { gameSessionId: number }) {
   const { viewerCount } = useGameSessionSync(gameSessionId);

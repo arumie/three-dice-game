@@ -1,10 +1,10 @@
 import type { Dice } from "@/db/schema";
-import type { PlayerTurnModel, RollModel, RoundModel } from "@/lib/models";
 import {
   calculateScore,
   detectSpecialRoll,
   isSafeRoll,
 } from "@/lib/game-utils";
+import type { PlayerTurnModel, RollModel, RoundModel } from "@/lib/models";
 
 export type OptimisticAction =
   | { type: "roll"; dice: Dice }

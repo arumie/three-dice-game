@@ -21,8 +21,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { endGameAction } from "@/app/actions";
-import { suppressGameSync } from "@/lib/game-sync";
 import { DiceLoading } from "@/components/dice-loading";
+import { PlayerName } from "@/components/player-name";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,8 +45,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { formatStatus, getStatusVariant } from "@/lib/game-helpers";
+import { suppressGameSync } from "@/lib/game-sync";
 import type { GameModel, ParticipantStats } from "@/lib/models";
-import { PlayerName } from "@/components/player-name";
 import { BeerTracker } from "./beer-tracker";
 
 interface GameStateCardProps {
@@ -80,6 +80,7 @@ export function GameStateCard({
   }
 
   // Reset navigating state when returning to this page (e.g. browser back)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: gameSessionId is the intended trigger to reset state when switching games without remount.
   useEffect(() => {
     setIsNavigating(false);
     setEndGameOpen(false);
@@ -231,6 +232,7 @@ export function GameStateCard({
           {/* Icon legend accordion */}
           <div className="mb-3 rounded-lg border border-border bg-muted/30">
             <button
+              type="button"
               onClick={() => setLegendOpen((v) => !v)}
               className="flex w-full items-center gap-2 px-4 py-2.5 text-xs font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
               aria-expanded={legendOpen}

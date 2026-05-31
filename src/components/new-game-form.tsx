@@ -1,25 +1,31 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Plus,
-  X,
+  AlertCircle,
+  Check,
   Eye,
   EyeOff,
-  Check,
-  AlertCircle,
   Info,
-  UserPlus,
   Loader2,
+  Plus,
   ShieldCheck,
+  UserPlus,
+  X,
 } from "lucide-react";
-import { ThreeDiceLogo } from "@/components/three-dice-logo";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod/v4";
-import { zodResolver } from "@hookform/resolvers/zod";
-
+import {
+  type CreateGameResult,
+  createGameAction,
+  verifyOrRegisterPlayerAction,
+} from "@/app/actions";
+import { DiceLoading } from "@/components/dice-loading";
+import { ThreeDiceLogo } from "@/components/three-dice-logo";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,14 +35,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from "@/components/ui/input-group";
-import { Switch } from "@/components/ui/switch";
 import {
   Form,
   FormControl,
@@ -46,21 +44,18 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-
-import { DiceLoading } from "@/components/dice-loading";
+import { Input } from "@/components/ui/input";
 import {
-  createGameAction,
-  verifyOrRegisterPlayerAction,
-  type CreateGameResult,
-  type VerifyResult,
-} from "@/app/actions";
-import { toast } from "sonner";
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
+import { Switch } from "@/components/ui/switch";
 
 const MIN_PLAYERS = 3;
 const MAX_PLAYERS = 20;
 const MIN_LOADING_MS = 2000;
-
-const USERNAME_REGEX = /^[a-zA-Z0-9_-]+$/;
 
 const newGameSchema = z.object({
   name: z.string().min(1, "Game name is required").max(100),

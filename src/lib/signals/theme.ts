@@ -1,4 +1,4 @@
-import { signal, effect } from "@preact/signals-react";
+import { effect, signal } from "@preact/signals-react";
 
 export type Theme = "light" | "dark";
 

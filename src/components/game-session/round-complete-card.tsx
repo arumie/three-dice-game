@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
-  Dices,
   Beer,
-  Play,
+  Crown,
+  Dices,
   Loader2,
+  Play,
   ShieldAlert,
   ShieldCheck,
   TrendingDown,
-  Crown,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { PlayerName } from "@/components/player-name";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -18,25 +21,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { TiebreakerDialog } from "./tiebreaker-dialog";
-import { DiceDisplay } from "./dice-display";
-import { cn } from "@/lib/utils";
-import type { RoundModel } from "@/lib/models";
-import type { ParticipantWithPlayer } from "@/lib/models";
 import {
+  formatNamesList,
   formatSpecialRoll,
   getNameById,
-  formatNamesList,
 } from "@/lib/game-helpers";
-import { PlayerName } from "@/components/player-name";
 import {
   computeLowestRollCounts,
   computeStairsSipsToAward,
   getThreeOfAKindSips,
 } from "@/lib/game-utils";
+import type { ParticipantWithPlayer, RoundModel } from "@/lib/models";
+import { cn } from "@/lib/utils";
+import { DiceDisplay } from "./dice-display";
+import { TiebreakerDialog } from "./tiebreaker-dialog";
 
 // ─── Presentational Sub-components ───────────────────────────────────────────
 
@@ -359,6 +358,7 @@ export function RoundCompleteCard({
   const [tiebreakerWinnerId, setTiebreakerWinnerId] = useState<number | null>(
     null,
   );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: round.id is the intended trigger to reset tiebreaker state when the round changes.
   useEffect(() => {
     setTiebreakerWinnerId(null);
     setTiebreakerOpen(false);

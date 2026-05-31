@@ -1,5 +1,5 @@
+import crypto from "node:crypto";
 import { cookies } from "next/headers";
-import crypto from "crypto";
 import { getGameSessionById } from "@/db/queries/gameSessions";
 import type { SelectGameSession } from "@/db/schema";
 

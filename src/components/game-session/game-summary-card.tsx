@@ -1,35 +1,34 @@
 "use client";
 
-import Link from "next/link";
 import {
-  Crown,
-  Trophy,
+  Award,
   Beer,
-  Skull,
-  Dices,
-  Clock,
-  Users,
-  Footprints,
-  Plus,
   CircleArrowDown,
+  Clock,
+  Crown,
+  Dices,
+  Footprints,
+  Frown,
+  Home,
+  type LucideIcon,
+  Plus,
+  Skull,
   Toilet,
   TrendingDown,
-  Home,
-  Award,
-  Frown,
-  type LucideIcon,
+  Trophy,
+  Users,
 } from "lucide-react";
+import Link from "next/link";
+import { PlayerName } from "@/components/player-name";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import type { GameModel, ParticipantStats } from "@/lib/models";
-import { PlayerName } from "@/components/player-name";
 
 interface GameSummaryCardProps {
   session: GameModel;

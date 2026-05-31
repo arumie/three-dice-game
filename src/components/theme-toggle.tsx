@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
 import { useSignals } from "@preact/signals-react/runtime";
 import { Moon, Sun } from "lucide-react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  theme,
-  toggleTheme,
   applyTheme,
   type Theme,
+  theme,
+  toggleTheme,
 } from "@/lib/signals/theme";
 
 const STORAGE_KEY = "three-dice-theme";

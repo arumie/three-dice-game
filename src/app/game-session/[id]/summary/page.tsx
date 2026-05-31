@@ -1,9 +1,9 @@
+import { notFound, redirect } from "next/navigation";
 import { DebugPanel } from "@/components/game-session/debug-panel";
 import { GameSummaryCard } from "@/components/game-session/game-summary-card";
 import { RoundBrowser } from "@/components/game-session/round-browser";
 import { getGameSession } from "@/lib/cached-queries";
 import { computeParticipantStats } from "@/lib/game-helpers";
-import { notFound, redirect } from "next/navigation";
 
 interface SummaryPageProps {
   params: Promise<{ id: string }>;

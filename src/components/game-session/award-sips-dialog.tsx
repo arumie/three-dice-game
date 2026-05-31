@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { Beer } from "lucide-react";
+import { useState } from "react";
+import { PlayerName } from "@/components/player-name";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,10 +12,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
-import type { ParticipantWithPlayer } from "@/lib/models";
 import { getParticipantName } from "@/lib/game-helpers";
-import { PlayerName } from "@/components/player-name";
+import type { ParticipantWithPlayer } from "@/lib/models";
+import { cn } from "@/lib/utils";
 
 interface AwardSipsDialogProps {
   open: boolean;

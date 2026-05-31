@@ -1,13 +1,13 @@
 import { notFound, redirect } from "next/navigation";
-import { getGameSession } from "@/lib/cached-queries";
-import { getCurrentRound, computeParticipantStats } from "@/lib/game-helpers";
-import { GameStateCard } from "@/components/game-session/game-state-card";
-import { RoundInfoCard } from "@/components/game-session/round-info-card";
-import { PlayerTurnCard } from "@/components/game-session/player-turn-card";
-import { MobileGameDrawer } from "@/components/game-session/mobile-game-drawer";
 import { DebugPanel } from "@/components/game-session/debug-panel";
-import { PasswordGate } from "@/components/game-session/password-gate";
 import { GameSessionSync } from "@/components/game-session/game-session-sync";
+import { GameStateCard } from "@/components/game-session/game-state-card";
+import { MobileGameDrawer } from "@/components/game-session/mobile-game-drawer";
+import { PasswordGate } from "@/components/game-session/password-gate";
+import { PlayerTurnCard } from "@/components/game-session/player-turn-card";
+import { RoundInfoCard } from "@/components/game-session/round-info-card";
+import { getGameSession } from "@/lib/cached-queries";
+import { computeParticipantStats, getCurrentRound } from "@/lib/game-helpers";
 
 interface GameSessionPageProps {
   params: Promise<{ id: string }>;

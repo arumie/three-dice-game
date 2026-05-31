@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Dices, Shuffle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -112,6 +112,7 @@ export function EnterDiceDialog({
         <div className="flex justify-center gap-6 py-4">
           {values.map((val, idx) => (
             <DieValuePicker
+              // biome-ignore lint/suspicious/noArrayIndexKey: dice are positional; the slot index is the stable identity.
               key={idx}
               value={val}
               onChange={(v) => setValue(idx, v)}

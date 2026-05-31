@@ -1,21 +1,21 @@
 "use client";
 
-import Link from "next/link";
 import {
   Beer,
-  Users,
-  Dices,
+  ChevronRight,
+  Clock,
   Crown,
+  Dices,
   Frown,
   Skull,
-  Clock,
-  ChevronRight,
+  Users,
 } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import type { GameModel, ParticipantStats } from "@/lib/models";
-import { getStatusVariant, formatStatus } from "@/lib/game-helpers";
+import Link from "next/link";
 import { PlayerName } from "@/components/player-name";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { formatStatus, getStatusVariant } from "@/lib/game-helpers";
+import type { GameModel, ParticipantStats } from "@/lib/models";
 
 interface GameListCardProps {
   session: GameModel;

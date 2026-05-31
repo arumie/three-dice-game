@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "..";
-import { rollsTable, type InsertRoll, type SelectRoll } from "../schema";
+import { type InsertRoll, rollsTable, type SelectRoll } from "../schema";
 
 /**
  * Create a new roll

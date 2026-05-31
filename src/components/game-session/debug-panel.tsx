@@ -1,23 +1,28 @@
 "use client";
 
-import { useTransition, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Bug,
-  ClipboardCopy,
-  Database,
-  RefreshCw,
   Check,
   ChevronRight,
-  Trash2,
-  RotateCcw,
-  UserRoundPlus,
+  ClipboardCopy,
+  Database,
   FlaskConical,
+  RefreshCw,
+  RotateCcw,
+  Trash2,
+  UserRoundPlus,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  deleteGameSessionAction,
+  deleteTestGameAction,
+  getRawGameDataAction,
+  invalidateCacheAction,
+  reassignGuestToPlayerAction,
+  reopenGameSessionAction,
+} from "@/app/actions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +33,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -36,16 +42,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  invalidateCacheAction,
-  getRawGameDataAction,
-  deleteGameSessionAction,
-  deleteTestGameAction,
-  reopenGameSessionAction,
-  reassignGuestToPlayerAction,
-} from "@/app/actions";
-import type { GameModel, ParticipantWithPlayer } from "@/lib/models";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { getParticipantName } from "@/lib/game-helpers";
+import type { GameModel, ParticipantWithPlayer } from "@/lib/models";
 
 interface DebugPanelProps {
   session: GameModel;

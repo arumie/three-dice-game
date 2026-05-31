@@ -1,12 +1,12 @@
 "use cache";
 
-import { cacheTag, cacheLife } from "next/cache";
-import { getCompleteGame } from "@/lib/game-service";
-import { getAllGameSessions as getAllGameSessionsQuery } from "@/db/queries/gameSessions";
+import { cacheLife, cacheTag } from "next/cache";
 import { getPlayerByUsername as getPlayerByUsernameQuery } from "@/db/queries";
-import { gameSessionTag, ALL_GAMES_TAG, playerTag } from "@/lib/cache-tags";
-import type { GameModel } from "@/lib/models";
+import { getAllGameSessions as getAllGameSessionsQuery } from "@/db/queries/gameSessions";
 import type { SelectPlayer } from "@/db/schema";
+import { ALL_GAMES_TAG, gameSessionTag, playerTag } from "@/lib/cache-tags";
+import { getCompleteGame } from "@/lib/game-service";
+import type { GameModel } from "@/lib/models";
 
 /**
  * Cached game session fetcher.

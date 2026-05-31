@@ -38,7 +38,7 @@ export function getUsernameById(
   participants: ParticipantWithPlayer[],
 ): string | null {
   const p = participants.find((p) => p.id === participantId);
-  if (!p || p.playerType !== "registered") return null;
+  if (p?.playerType !== "registered") return null;
   return p.playerUsername ?? null;
 }
 

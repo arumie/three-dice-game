@@ -1,14 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { ViewTransition } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ViewTransition } from "react";
 import "./globals.css";
 
-import { ThemeToggle } from "@/components/theme-toggle";
+import { Analytics } from "@vercel/analytics/react";
 import { GameRulesDialog } from "@/components/game-rules-dialog";
 import { MobileToolbar } from "@/components/mobile-toolbar";
 import { SiteFooter } from "@/components/site-footer";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Toaster } from "@/components/ui/sonner";
-import { Analytics } from "@vercel/analytics/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

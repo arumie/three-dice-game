@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 // Pip positions on a 3x3 grid for each die face value
@@ -119,7 +119,10 @@ function Die({
         const hasPip = pips.some(([r, c]) => r === row && c === col);
 
         return (
-          <div key={idx} className="flex items-center justify-center">
+          <div
+            key={`${row}-${col}`}
+            className="flex items-center justify-center"
+          >
             {hasPip && (
               <div
                 className={cn(
@@ -157,6 +160,7 @@ export function DiceDisplay({
     <div className="flex items-center gap-2 sm:gap-3">
       {dice.map((die, idx) => (
         <Die
+          // biome-ignore lint/suspicious/noArrayIndexKey: dice are positional; the slot index is the stable identity across re-rolls.
           key={idx}
           value={die.value}
           selected={selectedIndices?.has(idx)}

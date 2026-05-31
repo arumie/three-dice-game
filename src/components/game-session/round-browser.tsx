@@ -1,22 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import {
+  Beer,
   ChevronLeft,
   ChevronRight,
-  Beer,
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
+import { PlayerName } from "@/components/player-name";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { DiceDisplay } from "./dice-display";
-import type { RoundModel } from "@/lib/models";
-import type { ParticipantWithPlayer } from "@/lib/models";
 import { formatSpecialRoll, getNameById } from "@/lib/game-helpers";
-import { PlayerName } from "@/components/player-name";
+import type { ParticipantWithPlayer, RoundModel } from "@/lib/models";
+import { DiceDisplay } from "./dice-display";
 
 interface RoundBrowserProps {
   rounds: RoundModel[];

@@ -1,17 +1,16 @@
 import { Beer, ChevronRight, Clock, Flame, Skull } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlayerName } from "@/components/player-name";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { DiceDisplay } from "./dice-display";
-import type { RoundModel } from "@/lib/models";
-import type { ParticipantWithPlayer } from "@/lib/models";
 import {
   formatSpecialRoll,
   formatStatus,
   getNameById,
   getStatusVariant,
 } from "@/lib/game-helpers";
-import { PlayerName } from "@/components/player-name";
+import type { ParticipantWithPlayer, RoundModel } from "@/lib/models";
+import { DiceDisplay } from "./dice-display";
 
 interface RoundInfoCardProps {
   round: RoundModel;
@@ -115,11 +114,15 @@ export function RoundInfoCard({
     turnData: (typeof round.turns)[number] | undefined,
   ) {
     if (isCurrent) return "border-primary/50 bg-primary/5";
-    if (!turnData || !turnData.isComplete) return "border-border";
+    if (!turnData?.isComplete) return "border-border";
     if (turnData.isSafe) return "border-green-500/50 bg-green-500/5";
     if (losingParticipantIds.has(participantId))
       return "border-red-500/50 bg-red-500/5";
-    if (turnData.finalScore !== null && turnData.finalScore > lowestScore!)
+    if (
+      turnData.finalScore !== null &&
+      lowestScore !== null &&
+      turnData.finalScore > lowestScore
+    )
       return "border-green-500/50 bg-green-500/5";
     return "border-border";
   }

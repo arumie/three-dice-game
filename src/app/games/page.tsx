@@ -1,3 +1,10 @@
+import { GameListCard } from "@/components/games-list/game-list-card";
+import { GamesDebugPanel } from "@/components/games-list/games-debug-panel";
+import {
+  type GlobalStats,
+  GlobalStatsCard,
+} from "@/components/games-list/global-stats-card";
+import { HomeButton } from "@/components/home-button";
 import { getAllGames } from "@/lib/cached-queries";
 import {
   accumulateStats,
@@ -7,13 +14,6 @@ import {
   getParticipantName,
   getUsernameById,
 } from "@/lib/game-helpers";
-import {
-  GlobalStatsCard,
-  type GlobalStats,
-} from "@/components/games-list/global-stats-card";
-import { GameListCard } from "@/components/games-list/game-list-card";
-import { GamesDebugPanel } from "@/components/games-list/games-debug-panel";
-import { HomeButton } from "@/components/home-button";
 import type { AggregatedPlayerStats, GameModel } from "@/lib/models";
 
 export default async function GamesPage() {

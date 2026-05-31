@@ -1,5 +1,6 @@
 "use client";
 
+import { useSignals } from "@preact/signals-react/runtime";
 import {
   CircleCheckIcon,
   InfoIcon,
@@ -7,9 +8,8 @@ import {
   OctagonXIcon,
   TriangleAlertIcon,
 } from "lucide-react";
-import { useSignals } from "@preact/signals-react/runtime";
-import { theme } from "@/lib/signals/theme";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
+import { theme } from "@/lib/signals/theme";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   useSignals();

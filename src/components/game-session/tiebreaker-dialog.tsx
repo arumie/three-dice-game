@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Dices, Crown, RotateCcw, Shuffle } from "lucide-react";
+import { Crown, Dices, RotateCcw, Shuffle } from "lucide-react";
+import { useCallback, useState } from "react";
+import { PlayerName } from "@/components/player-name";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,11 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DiceDisplay } from "./dice-display";
-import { cn } from "@/lib/utils";
-import type { ParticipantWithPlayer } from "@/lib/models";
 import { getParticipantName } from "@/lib/game-helpers";
-import { PlayerName } from "@/components/player-name";
+import type { ParticipantWithPlayer } from "@/lib/models";
+import { cn } from "@/lib/utils";
+import { DiceDisplay } from "./dice-display";
 
 const DICE_VALUES = [1, 2, 3, 4, 5, 6];
 
@@ -40,7 +40,7 @@ export function TiebreakerDialog({
   const [rolls, setRolls] = useState<Map<number, number | null>>(
     () => new Map(tiedParticipantIds.map((id) => [id, null])),
   );
-  const [winnerId, setWinnerId] = useState<number | null>(null);
+  const [, setWinnerId] = useState<number | null>(null);
 
   // Reset state when dialog opens with new participants
   const resetState = useCallback((ids: number[]) => {
@@ -75,7 +75,7 @@ export function TiebreakerDialog({
 
   // Determine the result once everyone has rolled
   const highestValue = allRolled
-    ? Math.max(...activeIds.map((id) => rolls.get(id)!))
+    ? Math.max(...activeIds.map((id) => rolls.get(id) ?? 0))
     : null;
 
   const highestRollers = allRolled
@@ -84,6 +84,10 @@ export function TiebreakerDialog({
 
   const resolvedWinnerId =
     allRolled && highestRollers.length === 1 ? highestRollers[0] : null;
+  const winnerParticipant =
+    resolvedWinnerId != null
+      ? participants.find((p) => p.id === resolvedWinnerId)
+      : undefined;
   const hasWinner = resolvedWinnerId != null;
   const hasTie = allRolled && highestRollers.length > 1;
 
@@ -117,9 +121,9 @@ export function TiebreakerDialog({
 
         <div className="flex flex-col gap-4 py-2">
           {activeIds.map((id) => {
-            const name = getParticipantName(
-              participants.find((p) => p.id === id)!,
-            );
+            const participant = participants.find((p) => p.id === id);
+            if (!participant) return null;
+            const name = getParticipantName(participant);
             const value = rolls.get(id) ?? null;
             const isHighest = hasWinner && id === resolvedWinnerId;
             const isTiedHigh = hasTie && highestRollers.includes(id);
@@ -149,9 +153,7 @@ export function TiebreakerDialog({
                     {name.charAt(0).toUpperCase()}
                   </div>
                   <span className="flex-1 text-sm font-medium">
-                    <PlayerName
-                      participant={participants.find((p) => p.id === id)!}
-                    />
+                    <PlayerName participant={participant} />
                     {isHighest && (
                       <Crown className="ml-1.5 inline size-3.5 text-green-500" />
                     )}
@@ -208,13 +210,10 @@ export function TiebreakerDialog({
               <RotateCcw className="size-4" />
               Re-roll Tiebreaker
             </Button>
-          ) : hasWinner && resolvedWinnerId != null ? (
+          ) : hasWinner && winnerParticipant ? (
             <Button onClick={handleConfirm} className="w-full">
               <Crown className="size-4" />
-              {getParticipantName(
-                participants.find((p) => p.id === resolvedWinnerId)!,
-              )}{" "}
-              Starts Next Round
+              {getParticipantName(winnerParticipant)} Starts Next Round
             </Button>
           ) : null}
         </DialogFooter>

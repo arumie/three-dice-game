@@ -1,5 +1,5 @@
-import bcrypt from "bcryptjs";
 import process from "node:process";
+import bcrypt from "bcryptjs";
 
 const SALT_ROUNDS = 12;
 

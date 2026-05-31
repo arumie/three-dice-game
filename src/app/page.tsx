@@ -1,10 +1,10 @@
-import { Suspense } from "react";
-import Link from "next/link";
 import { List } from "lucide-react";
-import { NewGameForm } from "@/components/new-game-form";
+import Link from "next/link";
+import { Suspense } from "react";
 import { NewGameDebugPanel } from "@/components/new-game-debug-panel";
-import { getAllGames } from "@/lib/cached-queries";
+import { NewGameForm } from "@/components/new-game-form";
 import { Button } from "@/components/ui/button";
+import { getAllGames } from "@/lib/cached-queries";
 
 export default async function Home() {
   const games = await getAllGames();

@@ -1,23 +1,29 @@
 "use client";
 
 import {
-  useState,
-  useRef,
-  useEffect,
-  useTransition,
-  useOptimistic,
-} from "react";
+  Check,
+  Dices,
+  Footprints,
+  Hand,
+  Loader2,
+  RotateCcw,
+  Toilet,
+  TrendingDown,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
-  Dices,
-  RotateCcw,
-  Check,
-  Hand,
-  Footprints,
-  Loader2,
-  TrendingDown,
-  Toilet,
-} from "lucide-react";
+  useCallback,
+  useEffect,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
+import { toast } from "sonner";
+import { endTurnAction, rollDiceAction, startRoundAction } from "@/app/actions";
+import { PlayerName } from "@/components/player-name";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -25,30 +31,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { DiceDisplay } from "./dice-display";
-import { EnterDiceDialog } from "./enter-dice-dialog";
-import { AwardSipsDialog } from "./award-sips-dialog";
-import { GentlemanRuleDialog } from "./gentleman-rule-dialog";
-import { RoundCompleteCard } from "./round-complete-card";
-import { APP_DICE_EVENT } from "./game-state-card";
-import { applyOptimisticUpdate } from "./optimistic-round";
-import type { PlayerTurnModel, RollModel, RoundModel } from "@/lib/models";
 import type { Dice } from "@/db/schema";
-import type { ParticipantWithPlayer } from "@/lib/models";
 import { formatSpecialRoll, getNameById } from "@/lib/game-helpers";
-import { PlayerName } from "@/components/player-name";
+import { suppressGameSync } from "@/lib/game-sync";
 import {
-  isSafeRoll,
-  violatesGentlemanRule,
   computeScoreToBeat,
   computeStairsSipsToAward,
+  isSafeRoll,
+  violatesGentlemanRule,
 } from "@/lib/game-utils";
-import { rollDiceAction, endTurnAction, startRoundAction } from "@/app/actions";
-import { suppressGameSync } from "@/lib/game-sync";
-import { toast } from "sonner";
+import type {
+  ParticipantWithPlayer,
+  PlayerTurnModel,
+  RollModel,
+  RoundModel,
+} from "@/lib/models";
+import { AwardSipsDialog } from "./award-sips-dialog";
+import { DiceDisplay } from "./dice-display";
+import { EnterDiceDialog } from "./enter-dice-dialog";
+import { APP_DICE_EVENT } from "./game-state-card";
+import { GentlemanRuleDialog } from "./gentleman-rule-dialog";
+import { applyOptimisticUpdate } from "./optimistic-round";
+import { RoundCompleteCard } from "./round-complete-card";
 
 const END_TURN_COOLDOWN_MS = 1_500;
 
@@ -141,7 +146,7 @@ function DiceSection({
           </Badge>
         ) : (
           <span className="text-2xl font-bold tabular-nums sm:text-3xl">
-            {latestRoll!.score}
+            {latestRoll?.score}
           </span>
         ))}
 
@@ -378,8 +383,9 @@ export function PlayerTurnCard({
   const oCurrentTurn =
     optimisticRound.turns.find((t) => !t.isComplete && t.totalRollsUsed > 0) ??
     currentTurn;
-  const oCurrentParticipantId = optimisticRound.turns.find((t) => !t.isComplete)
-    ? optimisticRound.turns.find((t) => !t.isComplete)!.participantId
+  const oIncompleteTurn = optimisticRound.turns.find((t) => !t.isComplete);
+  const oCurrentParticipantId = oIncompleteTurn
+    ? oIncompleteTurn.participantId
     : (optimisticRound.playerOrder.find(
         (pid) =>
           !optimisticRound.turns.some(
@@ -491,7 +497,7 @@ export function PlayerTurnCard({
   const endTurnCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevParticipantIdRef = useRef<number | null>(null);
 
-  function startEndTurnCooldown() {
+  const startEndTurnCooldown = useCallback(() => {
     setIsEndTurnCooldown(true);
     if (endTurnCooldownRef.current) {
       clearTimeout(endTurnCooldownRef.current);
@@ -500,7 +506,7 @@ export function PlayerTurnCard({
       endTurnCooldownRef.current = null;
       setIsEndTurnCooldown(false);
     }, END_TURN_COOLDOWN_MS);
-  }
+  }, []);
 
   useEffect(() => {
     if (
@@ -510,7 +516,7 @@ export function PlayerTurnCard({
       startEndTurnCooldown();
     }
     prevParticipantIdRef.current = oCurrentParticipantId;
-  }, [oCurrentParticipantId]);
+  }, [oCurrentParticipantId, startEndTurnCooldown]);
 
   useEffect(() => {
     return () => {

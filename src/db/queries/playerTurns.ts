@@ -1,8 +1,8 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "..";
 import {
-  playerTurnsTable,
   type InsertPlayerTurn,
+  playerTurnsTable,
   type SelectPlayerTurn,
 } from "../schema";
 

@@ -6,26 +6,26 @@ import {
   createGameSession,
   createGuest,
   createGuestParticipant,
+  createPlayer,
   createRegisteredParticipant,
   deleteGameSession,
   findDuplicateInProgressGame,
   getGameParticipantById,
   getGameSessionById,
   getPlayerByUsername,
-  createPlayer,
   reassignParticipantToPlayer,
   reopenGameSession,
 } from "@/db/queries";
+import { getSyncSenderId, publishGameUpdate } from "@/lib/ably-server";
+import { ALL_GAMES_TAG, gameSessionTag, playerTag } from "@/lib/cache-tags";
+import { requireGameAuth, setGameAuthCookie } from "@/lib/game-auth";
 import {
   createRound,
   endCurrentTurn,
   getLatestRound,
   recordRoll,
 } from "@/lib/game-service";
-import { gameSessionTag, ALL_GAMES_TAG, playerTag } from "@/lib/cache-tags";
-import { requireGameAuth, setGameAuthCookie } from "@/lib/game-auth";
 import { hashPlayerPassword, verifyPlayerPassword } from "@/lib/player-auth";
-import { publishGameUpdate, getSyncSenderId } from "@/lib/ably-server";
 
 const USERNAME_REGEX = /^[a-zA-Z0-9_-]+( [a-zA-Z0-9_-]+)*$/;
 const USERNAME_MAX_LENGTH = 30;
@@ -255,12 +255,12 @@ export async function rollDiceAction(data: {
     getGameSessionById(data.gameSessionId),
     getLatestRound(data.gameSessionId),
   ]);
-  await requireGameAuth(data.gameSessionId, session!);
+  await requireGameAuth(data.gameSessionId, session ?? undefined);
   await recordRoll(
     data.gameSessionId,
     data.diceValues,
     data.reRollIndices,
-    round!,
+    round ?? undefined,
   );
   updateTag(gameSessionTag(data.gameSessionId));
   updateTag(ALL_GAMES_TAG);
@@ -282,8 +282,12 @@ export async function endTurnAction(data: {
     getGameSessionById(data.gameSessionId),
     getLatestRound(data.gameSessionId),
   ]);
-  await requireGameAuth(data.gameSessionId, session!);
-  await endCurrentTurn(data.gameSessionId, data.awardedToParticipantId, round!);
+  await requireGameAuth(data.gameSessionId, session ?? undefined);
+  await endCurrentTurn(
+    data.gameSessionId,
+    data.awardedToParticipantId,
+    round ?? undefined,
+  );
   updateTag(gameSessionTag(data.gameSessionId));
   updateTag(ALL_GAMES_TAG);
   publishGameUpdate(data.gameSessionId, senderId);
@@ -299,7 +303,7 @@ export async function startRoundAction(data: {
   const senderId = await getSyncSenderId();
   // Fetch session for auth — createRound does its own parallel fetch internally
   const session = await getGameSessionById(data.gameSessionId);
-  await requireGameAuth(data.gameSessionId, session!);
+  await requireGameAuth(data.gameSessionId, session ?? undefined);
   await createRound(data.gameSessionId, data.startingParticipantId);
   updateTag(gameSessionTag(data.gameSessionId));
   updateTag(ALL_GAMES_TAG);

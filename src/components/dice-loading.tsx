@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { ThreeDiceLogo } from "@/components/three-dice-logo";
+import { useEffect, useState } from "react";
 import { DiceSpinner } from "@/components/dice-spinner";
+import { ThreeDiceLogo } from "@/components/three-dice-logo";
+import { Card, CardContent } from "@/components/ui/card";
 
 const LOADING_MESSAGES = [
   "Rolling the dice...",

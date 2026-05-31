@@ -1,9 +1,9 @@
 import process from "node:process";
 import { Pool } from "@neondatabase/serverless";
-import { drizzle as drizzleNeon } from "drizzle-orm/neon-serverless";
 import type { NeonDatabase } from "drizzle-orm/neon-serverless";
-import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
+import { drizzle as drizzleNeon } from "drizzle-orm/neon-serverless";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 const isLocal = process.env.USE_LOCAL_DB === "true";

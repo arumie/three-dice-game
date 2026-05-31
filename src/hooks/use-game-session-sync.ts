@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import Ably from "ably";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { CLIENT_ID, isGameSyncSuppressed } from "@/lib/game-sync";
 
 export function useGameSessionSync(gameSessionId: number) {
@@ -12,6 +12,7 @@ export function useGameSessionSync(gameSessionId: number) {
   const [viewerCount, setViewerCount] = useState(0);
 
   useEffect(() => {
+    // biome-ignore lint/suspicious/noDocumentCookie: CookieStore API is not supported in Firefox/Safari; document.cookie is intentional here.
     document.cookie = `game-sync-client-id=${CLIENT_ID}; path=/; samesite=strict`;
 
     const channelName = `game-session:${gameSessionId}`;

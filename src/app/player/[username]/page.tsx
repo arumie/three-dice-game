@@ -1,14 +1,14 @@
-import { notFound } from "next/navigation";
+import { Calendar, Dices, Home, User } from "lucide-react";
 import Link from "next/link";
-import { User, Calendar, Dices, Home } from "lucide-react";
-import { getPlayer, getAllGames } from "@/lib/cached-queries";
+import { notFound } from "next/navigation";
+import { PlayerStatsCard } from "@/components/player-profile/player-stats-card";
+import { Button } from "@/components/ui/button";
+import { getAllGames, getPlayer } from "@/lib/cached-queries";
 import {
   accumulateStats,
   computeParticipantStats,
   emptyAggregatedStats,
 } from "@/lib/game-helpers";
-import { PlayerStatsCard } from "@/components/player-profile/player-stats-card";
-import { Button } from "@/components/ui/button";
 
 interface PlayerProfilePageProps {
   params: Promise<{ username: string }>;

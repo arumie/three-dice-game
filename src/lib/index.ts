@@ -1,46 +1,46 @@
 // Export domain models
-export type {
-  RollModel,
-  PlayerTurnModel,
-  RoundModel,
-  GameModel,
-  ParticipantStats,
-  PlayerGlobalStats,
-  AggregatedPlayerStats,
-} from "./models";
-
-// Export pure utility functions
-export {
-  calculateScore,
-  detectSpecialRoll,
-  isSafeRoll,
-  getThreeOfAKindSips,
-  rollDice,
-  createRollWithKept,
-  getStartingParticipant,
-  isRoundCompleteFromData,
-  getMaxRollsFromFirstTurn,
-  calculatePenaltyFromTurns,
-  findLosersFromTurns,
-  shuffleArray,
-  createPlayerOrder,
-  violatesGentlemanRule,
-  computeScoreToBeat,
-  computeStairsSipsToAward,
-  computeLowestRollCounts,
-} from "./game-utils";
-
-// Export mapper functions
-export { mapRoll, mapPlayerTurn, mapRound, mapGame } from "./mappers";
 
 // Export service functions
 export {
-  getCompleteGame,
-  getLatestRound,
-  getCurrentRound,
-  getNextParticipantToPlay,
+  createPlayerTurn,
   createRound,
+  getCompleteGame,
+  getCurrentRound,
+  getLatestRound,
+  getNextParticipantToPlay,
   getParticipantStats,
   getPlayerGlobalStats,
-  createPlayerTurn,
 } from "./game-service";
+
+// Export pure utility functions
+export {
+  calculatePenaltyFromTurns,
+  calculateScore,
+  computeLowestRollCounts,
+  computeScoreToBeat,
+  computeStairsSipsToAward,
+  createPlayerOrder,
+  createRollWithKept,
+  detectSpecialRoll,
+  findLosersFromTurns,
+  getMaxRollsFromFirstTurn,
+  getStartingParticipant,
+  getThreeOfAKindSips,
+  isRoundCompleteFromData,
+  isSafeRoll,
+  rollDice,
+  shuffleArray,
+  violatesGentlemanRule,
+} from "./game-utils";
+
+// Export mapper functions
+export { mapGame, mapPlayerTurn, mapRoll, mapRound } from "./mappers";
+export type {
+  AggregatedPlayerStats,
+  GameModel,
+  ParticipantStats,
+  PlayerGlobalStats,
+  PlayerTurnModel,
+  RollModel,
+  RoundModel,
+} from "./models";

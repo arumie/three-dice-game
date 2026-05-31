@@ -9,9 +9,10 @@
  */
 
 import { config } from "dotenv";
+
 config({ path: ".env.local" });
 
-import { eq, isNull, and } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { gameParticipantsTable, guestsTable } from "../src/db/schema";
 
 async function main() {

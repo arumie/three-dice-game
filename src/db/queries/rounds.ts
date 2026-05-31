@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "..";
-import { roundsTable, type InsertRound, type SelectRound } from "../schema";
+import { type InsertRound, roundsTable, type SelectRound } from "../schema";
 
 /**
  * Create a new round
