@@ -31,12 +31,16 @@
 #### Medium
 - [ ] Add player/spectator mode selection when joining a game session. Choose whether you play as a single player or control all players. Lock action buttons on devices whose turn it isn't, so only the active player's device can interact.
 - [ ] Players can be added to a game session after it has started (not during a round, but between rounds)
-- [ ] Add hyping mechanism that shows chances good rolls - Ex. "Only one more [1] for a three of a kind", "1/6 chance to get a stair!"
 - [ ] Stats - Relative stats like avg. worst roller (i.e. Simon)
 - [ ] Add graphs showing progress over rounds for every player  - Should be able to switch between what stat to show (sips, special rolls, rounds won/lost) 
 - [ ] Add profile settings for players to change their display name and add profile picture
+- [ ] Add hyping mechanism that shows chances good rolls - Ex. "Only one more [1] for a three of a kind", "1/6 chance to get a stair!"
+- [ ] Make sure that "In progress" games that haven't had any activity for 12 hours are automatically ended (using the last activity as the End Time)
+- [ ] Add the possibility for the admin to reset a players password (Should allow the admin to just change their password to a new one for them - added to the admin debug menu/panel)
 
 #### Easy
+
+- [ ] Add a short cooldown on the "End turn" to prevent accidentally ending the next players turn by mistake.
 
 ## Bugs
 
@@ -51,6 +55,7 @@
 ### TODO
 
 - [ ] Fix gentlemen rule options. 
+- [ ] Fix the New Game Form, so password managers doesn't fill all fields on use (It should only fill the current password field)
 
 
 ## Refactorings
@@ -67,3 +72,4 @@
 - [ ] Ensure that the game session can handle up to 20 players in the UI
 - [ ] Add playwright e2e tests for the game session
 - [ ] Split debug-panel into multiple smaller components
+- [ ] Add some distance between the "Roll Dice" and "End Turn" buttons on mobile.
