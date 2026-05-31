@@ -17,7 +17,12 @@ import {
   reopenGameSession,
 } from "@/db/queries";
 import { getSyncSenderId, publishGameUpdate } from "@/lib/ably-server";
-import { ALL_GAMES_TAG, gameSessionTag, playerTag } from "@/lib/cache-tags";
+import {
+  ALL_GAMES_TAG,
+  ALL_PLAYERS_TAG,
+  gameSessionTag,
+  playerTag,
+} from "@/lib/cache-tags";
 import { requireGameAuth, setGameAuthCookie } from "@/lib/game-auth";
 import {
   createRound,
@@ -138,6 +143,7 @@ export async function createGameAction(data: {
               passwordHash,
             });
             updateTag(playerTag(trimmed));
+            updateTag(ALL_PLAYERS_TAG);
             return createRegisteredParticipant(session.id, newPlayer.id);
           }
         }

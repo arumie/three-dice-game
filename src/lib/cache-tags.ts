@@ -20,3 +20,9 @@ export const ALL_GAMES_TAG = "all-games";
 export function playerTag(username: string): string {
   return `player-${username.toLowerCase()}`;
 }
+
+/**
+ * Cache tag for the all-players list.
+ * Invalidated when a new player is created.
+ */
+export const ALL_PLAYERS_TAG = "all-players";

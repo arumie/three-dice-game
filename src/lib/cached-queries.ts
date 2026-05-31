@@ -3,8 +3,14 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { getPlayerByUsername as getPlayerByUsernameQuery } from "@/db/queries";
 import { getAllGameSessions as getAllGameSessionsQuery } from "@/db/queries/gameSessions";
+import { getAllPlayers as getAllPlayersQuery } from "@/db/queries/players";
 import type { SelectPlayer } from "@/db/schema";
-import { ALL_GAMES_TAG, gameSessionTag, playerTag } from "@/lib/cache-tags";
+import {
+  ALL_GAMES_TAG,
+  ALL_PLAYERS_TAG,
+  gameSessionTag,
+  playerTag,
+} from "@/lib/cache-tags";
 import { getCompleteGame } from "@/lib/game-service";
 import type { GameModel } from "@/lib/models";
 
@@ -47,4 +53,16 @@ export async function getAllGames(): Promise<GameModel[]> {
   const sessions = await getAllGameSessionsQuery();
   const games = await Promise.all(sessions.map((s) => getCompleteGame(s.id)));
   return games.filter((g): g is GameModel => g !== null);
+}
+
+/**
+ * Cached list of all registered players.
+ *
+ * Invalidated when a new player is created via
+ * `updateTag(ALL_PLAYERS_TAG)`.
+ */
+export async function getAllPlayers(): Promise<SelectPlayer[]> {
+  cacheTag(ALL_PLAYERS_TAG);
+  cacheLife("default");
+  return getAllPlayersQuery();
 }

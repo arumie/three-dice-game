@@ -1,3 +1,5 @@
+import { Users } from "lucide-react";
+import Link from "next/link";
 import { GameListCard } from "@/components/games-list/game-list-card";
 import { GamesDebugPanel } from "@/components/games-list/games-debug-panel";
 import {
@@ -5,6 +7,7 @@ import {
   GlobalStatsCard,
 } from "@/components/games-list/global-stats-card";
 import { HomeButton } from "@/components/home-button";
+import { Button } from "@/components/ui/button";
 import { getAllGames } from "@/lib/cached-queries";
 import {
   accumulateStats,
@@ -96,7 +99,15 @@ export default async function GamesPage() {
           <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
             All Games
           </h1>
-          <HomeButton />
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" asChild className="gap-1.5">
+              <Link href="/players">
+                <Users className="size-4" />
+                Players
+              </Link>
+            </Button>
+            <HomeButton />
+          </div>
         </div>
 
         {games.length > 0 && (

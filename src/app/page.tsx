@@ -1,4 +1,4 @@
-import { List } from "lucide-react";
+import { List, Users } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { NewGameDebugPanel } from "@/components/new-game-debug-panel";
@@ -23,13 +23,19 @@ export default async function Home() {
         />
       </Suspense>
 
-      {/* Link to games list */}
+      {/* Links to games and players lists */}
       {games.length > 0 && (
-        <div className="mt-6 w-full max-w-sm sm:max-w-md">
+        <div className="mt-6 flex w-full max-w-sm flex-col gap-2 sm:max-w-md">
           <Button variant="outline" asChild className="w-full">
             <Link href="/games">
               <List className="size-4" />
               View All Games ({games.length})
+            </Link>
+          </Button>
+          <Button variant="outline" asChild className="w-full">
+            <Link href="/players">
+              <Users className="size-4" />
+              View All Players
             </Link>
           </Button>
         </div>
