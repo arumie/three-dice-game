@@ -51,11 +51,11 @@
 - [x] Super stair doesnt check for previous stairs ([1540684](https://github.com/arumie/three-dice-game/commit/1540684))
 - [x] Rules should contain section on "All safe" ([cfdb7a5](https://github.com/arumie/three-dice-game/commit/cfdb7a5))
 - [x] Switching apps on mobile during game creation causes duplicate game with same input (mobile tab suspension drops server action response, form re-appears with values, user re-submits)
+- [x] Fix the New Game Form, so password managers doesn't fill all fields on use (It should only fill the current password field) (set autoComplete semantics: player name as `username`, passwords as `current-password` in `new-game-form.tsx`)
 
 ### TODO
 
 - [ ] Fix gentlemen rule options. 
-- [ ] Fix the New Game Form, so password managers doesn't fill all fields on use (It should only fill the current password field)
 
 
 ## Refactorings

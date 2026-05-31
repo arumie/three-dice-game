@@ -375,7 +375,7 @@ export function NewGameForm({
                             <InputGroupInput
                               type={showPassword ? "text" : "password"}
                               placeholder="Enter a password"
-                              autoComplete="off"
+                              autoComplete="current-password"
                               {...field}
                             />
                           </FormControl>
@@ -458,7 +458,7 @@ export function NewGameForm({
                                     <FormControl>
                                       <Input
                                         placeholder={`Player ${index + 1}`}
-                                        autoComplete="off"
+                                        autoComplete="username"
                                         maxLength={30}
                                         {...nameField}
                                         onChange={(e) => {
@@ -489,7 +489,7 @@ export function NewGameForm({
                                           <InputGroupInput
                                             type={showPw ? "text" : "password"}
                                             placeholder="Password (optional)"
-                                            autoComplete="off"
+                                            autoComplete="current-password"
                                             {...pwField}
                                             onChange={(e) => {
                                               pwField.onChange(e);
@@ -611,7 +611,7 @@ export function NewGameForm({
                                   showCreationPassword ? "text" : "password"
                                 }
                                 placeholder="Enter creation password"
-                                autoComplete="off"
+                                autoComplete="current-password"
                                 {...field}
                               />
                             </FormControl>
