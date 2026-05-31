@@ -1,21 +1,21 @@
 "use client";
 
-import Link from "next/link";
 import {
-  Dices,
-  Beer,
-  Trophy,
-  Hash,
-  Toilet,
-  Sparkles,
-  TrendingDown,
   Award,
-  Skull,
-  Footprints,
+  Beer,
   CircleArrowDown,
   Crown,
+  Dices,
+  Footprints,
+  Hash,
   type LucideIcon,
+  Skull,
+  Sparkles,
+  Toilet,
+  TrendingDown,
+  Trophy,
 } from "lucide-react";
+import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import type { AggregatedPlayerStats } from "@/lib/models";
@@ -40,13 +40,17 @@ interface GlobalStatsCardProps {
 
 export type { GlobalStats };
 
+type AwardWinner = {
+  name: string;
+  username: string | null;
+};
+
 type AwardDef = {
   label: string;
   quip: string;
   icon: LucideIcon;
   color: string;
-  name: string;
-  username: string | null;
+  winners: AwardWinner[];
   value: number;
 };
 
@@ -59,21 +63,19 @@ function buildAward(
   color: string,
 ): AwardDef | null {
   if (players.length === 0) return null;
-  const top = [...players].sort(
-    (a, b) => (b[key] as number) - (a[key] as number),
-  )[0];
-  const value = top[key] as number;
-  return value > 0
-    ? {
-        label,
-        quip,
-        icon,
-        color,
-        name: top.name,
-        username: top.username,
-        value,
-      }
-    : null;
+  const value = Math.max(...players.map((p) => p[key] as number));
+  if (value <= 0) return null;
+  const winners: AwardWinner[] = players
+    .filter((p) => (p[key] as number) === value)
+    .map((p) => ({ name: p.name, username: p.username }));
+  return {
+    label,
+    quip,
+    icon,
+    color,
+    winners,
+    value,
+  };
 }
 
 function AwardName({
@@ -304,6 +306,7 @@ export function GlobalStatsCard({ stats, playerStats }: GlobalStatsCardProps) {
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
               {awardDefs.map((award) => {
                 const Icon = award.icon;
+                const isTie = award.winners.length > 1;
                 return (
                   <div
                     key={award.label}
@@ -314,9 +317,22 @@ export function GlobalStatsCard({ stats, playerStats }: GlobalStatsCardProps) {
                       <span className="text-xs font-semibold sm:text-sm">
                         {award.label}
                       </span>
+                      {isTie && (
+                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-muted-foreground sm:text-[10px]">
+                          Tie
+                        </span>
+                      )}
                     </div>
                     <span className="text-sm font-bold sm:text-base">
-                      <AwardName name={award.name} username={award.username} />{" "}
+                      {award.winners.map((winner, index) => (
+                        <span key={winner.username ?? winner.name}>
+                          {index > 0 && ", "}
+                          <AwardName
+                            name={winner.name}
+                            username={winner.username}
+                          />
+                        </span>
+                      ))}{" "}
                       <span className="text-xs font-normal text-muted-foreground sm:text-sm">
                         ({award.value})
                       </span>

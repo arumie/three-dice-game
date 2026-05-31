@@ -25,6 +25,7 @@
 - [x] Add a short cooldown on the "End turn" to prevent accidentally ending the next players turn by mistake.
 - [x] Add an admin debug panel option (only visible on the new game form) to start a new "Test" game session with 4 test players. When in the test game add a button to end game and delete it (see `new-game-debug-panel.tsx`, `createTestGameAction`/`deleteTestGameAction`, test-game button in `debug-panel.tsx`).
 - [x] Make sure that "In progress" games that haven't had any activity for 12 hours are automatically ended (using the last activity as the End Time) (daily Vercel cron `/api/cron/end-stale-games` + `endStaleInProgressGames`/`getGameLastActivity`)
+- [x] Add "ties" to global stats so if multiple players have the same number of wins/losses/sips drunk/etc. it's counted as a tie and shown like that in the global stats card (see `global-stats-card.tsx` `buildAward` winners array + "Tie" badge)
 
 ### TODO
 
@@ -37,12 +38,11 @@
 - [ ] Stats - Relative stats like avg. worst roller (i.e. Simon)
 - [ ] Add graphs showing progress over rounds for every player  - Should be able to switch between what stat to show (sips, special rolls, rounds won/lost) 
 - [ ] Add profile settings for players to change their display name and add profile picture
+- [ ] Add a "Players" page that shows all players and a brief summary of their stats.
 - [ ] Add hyping mechanism that shows chances good rolls - Ex. "Only one more [1] for a three of a kind", "1/6 chance to get a stair!"
 - [ ] Add the possibility for the admin to reset a players password (Should allow the admin to just change their password to a new one for them - added to the admin debug menu/panel)
 
 #### Easy
-
-- [ ] Add "ties" to global stats so if multiple players have the same number of wins/losses/sips drunk/etc. it's counted as a tie and shown like that in the global stats card.
 
 ## Bugs
 
